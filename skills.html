@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="icon" href="data:," />
+<title>All skills · Skills Dashboard</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body data-page="skills">
+
+<nav class="top" id="nav" aria-label="Site"></nav>
+
+<main id="app">
+
+  <section id="hero">
+    <div class="kicker" id="hKicker"></div>
+    <h1 id="hTitle"></h1>
+    <p class="lead">Every skill in the course in one table — filter it, search it, and tick things off.
+    These are the same ticks as the session pages; they live in this browser only.</p>
+    <div class="stats" style="margin-top:18px;max-width:640px">
+      <div class="stat"><div class="sl">Checked overall</div><div class="sv acc" id="stAll">—</div></div>
+      <div class="stat"><div class="sl">Rows shown</div><div class="sv" id="stShown">—</div></div>
+      <div class="stat"><div class="sl">Checked in view</div><div class="sv ok" id="stShownChk">—</div></div>
+    </div>
+  </section>
+
+  <section id="catalogue" aria-labelledby="catH">
+    <div class="kicker">Catalogue</div>
+    <h2 id="catH">Filter and search</h2>
+
+    <div class="filters" style="margin-top:14px" role="search">
+      <label class="fl"><span>Search name &amp; sentence</span>
+        <input type="search" id="fQ" placeholder="e.g. cache line, ring buffer" autocomplete="off" /></label>
+      <label class="fl"><span>Category</span><select id="fCat"></select></label>
+      <label class="fl"><span>Session</span><select id="fSess"></select></label>
+      <label class="fl"><span>Interview</span>
+        <select id="fIv">
+          <option value="">Any</option>
+          <option value="yes">Interview skills only</option>
+          <option value="no">Not interview skills</option>
+        </select></label>
+      <label class="fl"><span>Progress</span>
+        <select id="fChk">
+          <option value="">Any</option>
+          <option value="yes">Checked</option>
+          <option value="no">Not checked</option>
+        </select></label>
+      <div><button class="btn" type="button" id="btnClearF">Clear filters</button></div>
+    </div>
+
+    <div class="tablewrap">
+      <table class="cat">
+        <caption class="sub" style="text-align:left;padding:10px 0 12px">
+          All skills. The checkbox in each row is the same tick as on the session page.</caption>
+        <thead>
+          <tr>
+            <th scope="col"><span class="sr">Done</span>&#10003;</th>
+            <th scope="col">Skill</th>
+            <th scope="col">You can&hellip;</th>
+            <th scope="col">Category</th>
+            <th scope="col">Sessions</th>
+            <th scope="col">Depth</th>
+            <th scope="col">Open</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<footer id="foot"></footer>
+
+<script src="skills.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

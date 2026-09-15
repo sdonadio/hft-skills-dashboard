@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="icon" href="data:," />
+<title>Session 9 · Skills Dashboard</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body data-page="session">
+
+<nav class="top" id="nav" aria-label="Site"></nav>
+
+<main id="app">
+
+  <!-- ══════════ SESSION HEADER ══════════ -->
+  <section id="hero">
+    <div class="kicker" id="hKicker"></div>
+    <h1 id="hTitle"></h1>
+    <div class="row" id="hBadges" style="margin-top:10px"></div>
+    <div class="links" id="hLinks"></div>
+  </section>
+
+  <!-- ══════════ COVERAGE ══════════ -->
+  <section id="coverage" aria-labelledby="covH">
+    <div class="kicker">Where you stand</div>
+    <h2 id="covH">This session, and everything up to it</h2>
+    <div class="split" style="margin-top:16px">
+      <div>
+        <div class="radarpanel" id="radar"></div>
+        <div id="radarKey"></div>
+      </div>
+      <div class="stack">
+        <div class="stats">
+          <div class="stat"><div class="sl">Checked here</div><div class="sv acc" id="stHere">—</div></div>
+          <div class="stat"><div class="sl">This session</div><div class="sv" id="stHerePct">—</div></div>
+          <div class="stat"><div class="sl">Cumulative</div><div class="sv ok" id="stCum">—</div></div>
+          <div class="stat"><div class="sl">Interview skills</div><div class="sv" id="stIv">—</div></div>
+        </div>
+        <div class="panel tight">
+          <h3>This session</h3>
+          <div class="bar"><i id="barHere"></i></div>
+          <p class="sub">Tick a skill only when you can say the sentence and then do it —
+          from an empty file, with no notes open.</p>
+          <div class="row noprint" style="margin-top:12px">
+            <button class="btn" type="button" id="btnAll">Mark all in this session</button>
+            <button class="btn danger" type="button" id="btnNone">Clear this session</button>
+            <button class="btn" type="button" id="btnPrint">Print this checklist</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ SKILLS ══════════ -->
+  <section id="skills-sec" aria-labelledby="skH">
+    <div class="kicker">The checklist</div>
+    <h2 id="skH">Skills, grouped by category</h2>
+    <div id="skills"></div>
+  </section>
+
+  <!-- ══════════ PREV / NEXT ══════════ -->
+  <section id="nav-sec" class="noprint" aria-label="Session navigation">
+    <div class="pn" id="pn"></div>
+  </section>
+
+</main>
+
+<footer id="foot"></footer>
+
+<!-- Static wrapper for session 9: identical body to session.html, n fixed here.
+     Regenerate with tools/make_session_pages.py after editing session.html. -->
+<script>window.HFT_SESSION = 9;</script>
+<script src="skills.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

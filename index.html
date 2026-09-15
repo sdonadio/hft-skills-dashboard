@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="icon" href="data:," />
+<title>Skills Dashboard</title>
+<meta name="description" content="A skills checklist for a graduate course: what each session teaches, and what you can already do." />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body data-page="index">
+
+<nav class="top" id="nav" aria-label="Site"></nav>
+
+<main id="app">
+
+  <!-- ══════════ HEADER ══════════ -->
+  <section id="hero">
+    <div class="kicker" id="hKicker"></div>
+    <h1><span id="hCode"></span><br /><span id="hTitle"></span></h1>
+    <p class="lead">One checklist for the whole course. Every session lists the skills it teaches as a
+    sentence that starts with <em class="hi">&ldquo;You can&hellip;&rdquo;</em> — tick a skill only when the
+    sentence is true of you. The chart below is your own coverage, category by category.</p>
+    <div class="links" id="hLinks"></div>
+  </section>
+
+  <!-- ══════════ RADAR + STATS ══════════ -->
+  <section id="coverage" aria-labelledby="covH">
+    <div class="kicker">Your coverage</div>
+    <h2 id="covH">Four categories, checked against what has been taught</h2>
+    <div class="split" style="margin-top:16px">
+      <div>
+        <div class="radarpanel" id="radar"></div>
+        <div id="radarKey"></div>
+      </div>
+      <div class="stack">
+        <div class="stats">
+          <div class="stat"><div class="sl">Checked overall</div><div class="sv acc" id="stChecked">—</div></div>
+          <div class="stat"><div class="sl">Of the whole course</div><div class="sv" id="stPct">—</div></div>
+          <div class="stat"><div class="sl">Of what is taught</div><div class="sv ok" id="stTaught">—</div></div>
+          <div class="stat"><div class="sl">Latest session</div><div class="sv" id="stSession">—</div></div>
+          <div class="stat"><div class="sl">Interview skills</div><div class="sv" id="stInterview">—</div></div>
+        </div>
+        <div class="panel tight">
+          <h3>Whole course</h3>
+          <div class="bar"><i id="barAll"></i></div>
+          <div class="sub" id="barTxt"></div>
+        </div>
+        <div class="panel tight">
+          <h3>How to use this</h3>
+          <p class="sub">Check a skill only when you can do the &ldquo;You can&hellip;&rdquo; sentence
+          <strong>without notes</strong> — not when you have seen the slide. A half-remembered skill left
+          unchecked is more useful to you than a tidy page. Work session by session; each session page is
+          printable, so you can carry the checklist into a lab.</p>
+          <p class="sub"><strong>Privacy:</strong> your ticks are stored in
+          <em class="hi">this browser only</em> (localStorage). Nothing is sent anywhere, no account is
+          involved, and the instructor cannot see them. Clearing your browser data clears your progress.</p>
+          <div class="row" style="margin-top:12px">
+            <button class="btn danger" type="button" id="btnReset">Reset my progress</button>
+            <a class="btn" href="skills.html">Browse all skills</a>
+          </div>
+          <p class="sub" id="lsWarn" hidden style="color:var(--warn);margin-top:10px">This browser is
+          blocking local storage, so ticks will be lost when you leave the page.</p>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="margin-top:26px">Categories</h3>
+    <div class="cats" id="cats"></div>
+  </section>
+
+  <!-- ══════════ SESSION GRID ══════════ -->
+  <section id="sessions-sec" aria-labelledby="sesH">
+    <div class="kicker">The term</div>
+    <h2 id="sesH">Sessions</h2>
+    <p class="lead">Each card is one session: its date, its title, how many skills it covers and how many of
+    them you have ticked. Sessions that have not happened yet are dimmed.</p>
+    <div class="sessions" id="sessions"></div>
+  </section>
+
+</main>
+
+<footer id="foot"></footer>
+
+<script src="skills.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
