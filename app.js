@@ -174,6 +174,9 @@
   /* the highest session number in the data — sessions may start at 0 (or any n),
      so never use SESS.length as "the last session number" */
   var LAST_N = SESS.length ? SESS[SESS.length - 1].n : 0;
+  var WORD = (S.course && S.course.session_word) || "Session";   // "Week" for courses that count weeks
+  var DECK_WORD = (S.course && S.course.deck_word) || "";          // "Week" → "Deck Week 2" instead of "Deck W2"
+  function deckName(d) { var m = /^w(\d+)$/i.exec(String(d)); return m && DECK_WORD ? "Deck " + DECK_WORD + " " + m[1] : "Deck " + String(d).toUpperCase(); }
   /* neighbours by position in the sorted list, so gaps in numbering are fine */
   function neighbour(n, dir) {
     var k = sessIdx[n];
@@ -522,7 +525,7 @@
         var li = add(ol, el("li", "tli"));
         var a = add(li, el("a", "trow" + (isFuture(s.n) ? " future" : "")));
         a.href = "session-" + s.n + ".html";
-        a.setAttribute("aria-label", "Session " + s.n + ": " +
+        a.setAttribute("aria-label", WORD + " " + s.n + ": " +
           (f && f.focus ? f.focus : s.title) + ". " + t.checked + " of " + t.total +
           " skills checked.");
 
@@ -600,17 +603,17 @@
     var paras = hftParas(f);
     var headline = (f && f.focus) ? String(f.focus) : s.title;
 
-    document.title = "Session " + n + " · " + headline + " — " + S.course.code + " skills";
+    document.title = WORD + " " + n + " · " + headline + " — " + S.course.code + " skills";
     var crumbs = [];
     var prev = neighbour(n, -1), next = neighbour(n, 1);
-    if (prev) crumbs.push({ label: "← Session " + prev.n, href: "session-" + prev.n + ".html" });
-    crumbs.push({ label: "Session " + n + " · " + headline });
-    if (next) crumbs.push({ label: "Session " + next.n + " →", href: "session-" + next.n + ".html" });
+    if (prev) crumbs.push({ label: "← " + WORD + " " + prev.n, href: "session-" + prev.n + ".html" });
+    crumbs.push({ label: WORD + " " + n + " · " + headline });
+    if (next) crumbs.push({ label: WORD + " " + next.n + " →", href: "session-" + next.n + ".html" });
     buildNav(crumbs, { label: "All skills →", href: "skills.html" });
     buildFooter();
 
     /* ── 1 · header ─────────────────────────────────────────────── */
-    $("hKicker").textContent = "Session " + n + " of " + LAST_N + " · " + fmtDate(s.date);
+    $("hKicker").textContent = WORD + " " + n + " of " + SESS.length + " · " + fmtDate(s.date);
     /* the session title sits small above the focus; with no focus the title IS
        the big title, so don't print it twice */
     if (f && f.focus) { $("hSession").textContent = s.title; show($("hSession"), true); }
@@ -642,7 +645,7 @@
     }
     var decks = Array.isArray(s.decks) ? s.decks : [];
     for (k = 0; k < decks.length; k++) {
-      box("Deck (on " + LMS + ")", "Deck " + String(decks[k]).toUpperCase(), null, null);
+      box("Deck (on " + LMS + ")", deckName(decks[k]), null, null);
     }
     if (s.lab) box("Lab", s.lab.label || "Lab", s.lab.url, s.lab.due);
     if (s.hw) box("Homework", s.hw.label || "Homework", s.hw.url, s.hw.due);
