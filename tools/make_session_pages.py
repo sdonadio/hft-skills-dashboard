@@ -2,13 +2,20 @@
 """Regenerate session-1.html ... session-N.html from session.html.
 
 The wrappers exist only so that GitHub Pages (and CourseWorks links) can point at
-a URL with no query string. Each wrapper is session.html with one extra line:
+a URL with no query string. Each wrapper is session.html with one extra line,
+injected just before the data files so app.js sees it:
+
     <script>window.HFT_SESSION = N;</script>
-Run this after editing session.html. N comes from skills.js (count of sessions).
+    <script src="skills.js"></script>
+    <script src="focus.js"></script>
+    <script src="app.js"></script>
+
+Run this after editing session.html. N comes from skills.js (count of sessions);
+focus.js is never read here — a session with no focus entry still renders.
 
     python3 tools/make_session_pages.py
 """
-import json, os, re, sys
+import json, os
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -19,7 +26,8 @@ def session_numbers():
 
 def main():
     body = open(os.path.join(HERE, "session.html")).read()
-    for n in session_numbers():
+    nums = session_numbers()
+    for n in nums:
         out = body.replace("<title>Session · Skills Dashboard</title>",
                            "<title>Session %d · Skills Dashboard</title>" % n)
         out = out.replace('<script src="skills.js"></script>',
@@ -28,7 +36,7 @@ def main():
                           "<script>window.HFT_SESSION = %d;</script>\n"
                           '<script src="skills.js"></script>' % (n, n))
         open(os.path.join(HERE, "session-%d.html" % n), "w").write(out)
-    print("wrote %d session wrappers" % len(session_numbers()))
+    print("wrote %d session wrappers: %s" % (len(nums), ", ".join("session-%d.html" % n for n in nums)))
 
 if __name__ == "__main__":
     main()

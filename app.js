@@ -1,7 +1,17 @@
 "use strict";
 /* ═══════════════════════════════════════════════════════════════════════
    HFT Skills Dashboard — shared page logic.
-   Every page renders entirely from window.SKILLS (see README / SCHEMA).
+
+   Two data files, both plain <script> globals (so file:// works):
+     skills.js  → window.SKILLS   course, categories, sessions, skills
+     focus.js   → window.FOCUS    per-session technical focus, HFT link,
+                                  interview questions
+
+   A session page is a short technical page about ONE main technical focus:
+     header → the focus → the checklist → why it matters in HFT → interview.
+   If focus.js has no entry for a session, the checklist still renders and the
+   page says the focus content is coming.
+
    All data text reaches the DOM through textContent; never innerHTML.
    Progress lives in localStorage under  hft-skills:<skill id>
    ═══════════════════════════════════════════════════════════════════════ */
@@ -17,21 +27,10 @@
   }
   function clear(n) { while (n && n.firstChild) n.removeChild(n.firstChild); }
   function add(parent, child) { parent.appendChild(child); return child; }
-  var SVGNS = "http://www.w3.org/2000/svg";
-  function mk(tag, attrs) {
-    var e = document.createElementNS(SVGNS, tag), k;
-    for (k in attrs) { if (Object.prototype.hasOwnProperty.call(attrs, k)) e.setAttribute(k, attrs[k]); }
-    return e;
-  }
-  function stext(x, y, s, size, fill, anchor, weight) {
-    var t = mk("text", { x: x, y: y, fill: fill || "#9aa0a6",
-      "font-family": "ui-monospace, SFMono-Regular, Menlo, monospace" });
-    if (size) t.setAttribute("font-size", size);
-    if (anchor) t.setAttribute("text-anchor", anchor);
-    if (weight) t.setAttribute("font-weight", weight);
-    t.textContent = s;
-    return t;
-  }
+  function show(node, on) { if (node) node.hidden = !on; }
+  function txt(v) { return v === undefined || v === null ? "" : String(v); }
+  /* a DOM-id-safe form of a skill id ("cpp.pointers" → "cpp-pointers") */
+  function domId(id) { return txt(id).replace(/[^A-Za-z0-9_-]+/g, "-"); }
 
   /* ── progress store (localStorage, with an in-memory fallback so the
         page still works from file:// in a locked-down browser) ──────── */
@@ -90,11 +89,36 @@
 
   var CATS = S.categories.slice();
   var SESS = S.sessions.slice().sort(function (a, b) { return a.n - b.n; });
-  var byId = {}, byCat = {}, i, j;
+  var byId = {}, byCat = {}, i;
   for (i = 0; i < CATS.length; i++) byCat[CATS[i].id] = CATS[i];
   for (i = 0; i < S.skills.length; i++) byId[S.skills[i].id] = S.skills[i];
   var sessByN = {};
   for (i = 0; i < SESS.length; i++) sessByN[SESS[i].n] = SESS[i];
+
+  /* focus.js is optional, and may be missing individual sessions */
+  var FOCUS = (window.FOCUS && Array.isArray(window.FOCUS.sessions)) ? window.FOCUS : null;
+  var focusByN = {};
+  if (FOCUS) {
+    for (i = 0; i < FOCUS.sessions.length; i++) {
+      var fs = FOCUS.sessions[i];
+      if (fs && fs.n !== undefined && fs.n !== null) focusByN[Number(fs.n)] = fs;
+    }
+  }
+  function focusOf(n) { return focusByN[n] || null; }
+  function conceptsOf(f) { return f && Array.isArray(f.concepts) ? f.concepts : []; }
+  function ivOf(f) { return f && Array.isArray(f.interview) ? f.interview : []; }
+  function hftParas(f) {
+    if (!f || !f.hft) return [];
+    var h = f.hft;
+    if (Array.isArray(h.paragraphs)) return h.paragraphs;
+    if (h.text) return [h.text];
+    return [];
+  }
+  function ivCountAll() {
+    var t = 0, k;
+    for (k = 0; k < SESS.length; k++) t += ivOf(focusOf(SESS[k].n)).length;
+    return t;
+  }
 
   function catOf(id) { return byCat[id] || { id: id, name: id, color: "#9aa0a6" }; }
   function skillsOf(session) {
@@ -102,11 +126,6 @@
     var ids = Array.isArray(session.skills) ? session.skills : [];
     for (k = 0; k < ids.length; k++) if (byId[ids[k]]) out.push(byId[ids[k]]);
     return out;
-  }
-  /* short axis label, derived from the category name (no hard-coding) */
-  function shortCat(name) {
-    var t = String(name).split(/\s*[&/,]\s*/)[0].trim();
-    return t.split(/\s+/)[0];
   }
 
   /* ── dates: "today" on the US Eastern course clock ──────────────── */
@@ -139,148 +158,12 @@
   var TAUGHT_N = latestTaught();
 
   /* ── counting ───────────────────────────────────────────────────── */
-  /* a skill counts as "taught through n" when its introduced session <= n */
-  function taughtThrough(n) {
-    var out = [], k;
-    for (k = 0; k < S.skills.length; k++) if (S.skills[k].introduced <= n) out.push(S.skills[k]);
-    return out;
-  }
   function tally(list) {
-    var t = { total: list.length, checked: 0, byCat: {} }, k, c;
-    for (k = 0; k < CATS.length; k++) t.byCat[CATS[k].id] = { total: 0, checked: 0 };
-    for (k = 0; k < list.length; k++) {
-      c = t.byCat[list[k].category] || (t.byCat[list[k].category] = { total: 0, checked: 0 });
-      c.total++;
-      if (store.get(list[k].id)) { c.checked++; t.checked++; }
-    }
+    var t = { total: list.length, checked: 0 }, k;
+    for (k = 0; k < list.length; k++) if (store.get(list[k].id)) t.checked++;
     return t;
   }
   function pct(a, b) { return b > 0 ? Math.round((a / b) * 100) : 0; }
-
-  /* ── radar ──────────────────────────────────────────────────────── */
-  /* rows: [{cat, total, taught, checked, checkedAll}]
-     scale "total"  — outer ring is every skill in the category (course overview)
-     scale "taught" — outer ring is what has been taught so far (session page) */
-  function radar(host, rows, scale, titleTxt) {
-    clear(host);
-    var W = 420, H = 312, cx = 210, cy = 152, R = 102;
-    var svg = mk("svg", { viewBox: "0 0 " + W + " " + H, role: "img" });
-    var n = rows.length || 1, k, q;
-    var lab = [];
-    for (k = 0; k < rows.length; k++) {
-      lab.push(rows[k].cat.name + ": " + (scale === "taught"
-        ? rows[k].checked + " checked of " + rows[k].taught + " taught so far"
-        : rows[k].checkedAll + " checked of " + rows[k].total + " in the course, " +
-          rows[k].taught + " taught so far"));
-    }
-    svg.setAttribute("aria-label", (titleTxt ? titleTxt + ". " : "") +
-      "Radar chart with one axis per skill category. " + lab.join(". ") + ".");
-    function pt(idx, v) {
-      var a = -Math.PI / 2 + (2 * Math.PI * idx) / n;
-      var r = R * Math.max(0, Math.min(1, v));
-      return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
-    }
-    function poly(vals) {
-      var d = [], p;
-      for (var i2 = 0; i2 < vals.length; i2++) {
-        p = pt(i2, vals[i2]);
-        d.push(p[0].toFixed(1) + "," + p[1].toFixed(1));
-      }
-      return d.join(" ");
-    }
-    /* grid rings */
-    var rings = [0.25, 0.5, 0.75, 1];
-    for (k = 0; k < rings.length; k++) {
-      var vs = [], last = (k === rings.length - 1);
-      for (q = 0; q < n; q++) vs.push(rings[k]);
-      var ring = mk("polygon", { points: poly(vs), fill: "none",
-        stroke: last ? (scale === "taught" ? "#b9d9eb" : "#333a47") : "#272c36",
-        "stroke-width": last ? 1.5 : 1 });
-      if (last && scale === "taught") ring.setAttribute("stroke-dasharray", "5 4");
-      svg.appendChild(ring);
-    }
-    for (k = 0; k < n; k++) {
-      var e2 = pt(k, 1);
-      svg.appendChild(mk("line", { x1: cx, y1: cy, x2: e2[0], y2: e2[1],
-        stroke: "#272c36", "stroke-width": 1 }));
-    }
-    /* the two shapes */
-    var vT = [], vC = [], num = [], den = [];
-    for (k = 0; k < rows.length; k++) {
-      if (scale === "taught") {
-        num.push(rows[k].checked); den.push(rows[k].taught);
-        vT.push(rows[k].taught > 0 ? 1 : 0);
-        vC.push(rows[k].taught > 0 ? rows[k].checked / rows[k].taught : 0);
-      } else {
-        num.push(rows[k].checkedAll); den.push(rows[k].total);
-        vT.push(rows[k].total > 0 ? rows[k].taught / rows[k].total : 0);
-        vC.push(rows[k].total > 0 ? rows[k].checkedAll / rows[k].total : 0);
-      }
-    }
-    /* checked first, then the dashed "taught" outline on top, so a small
-       taught polygon is never hidden underneath the fill */
-    svg.appendChild(mk("polygon", { points: poly(vC), fill: "rgba(46,109,180,.55)",
-      stroke: "#7fb2dd", "stroke-width": 1.6 }));
-    if (scale !== "taught") {
-      svg.appendChild(mk("polygon", { points: poly(vT), fill: "none",
-        stroke: "#b9d9eb", "stroke-width": 1.5, "stroke-dasharray": "5 4" }));
-    }
-    /* vertices + axis labels */
-    for (k = 0; k < rows.length; k++) {
-      var pc = pt(k, vC[k]);
-      svg.appendChild(mk("circle", { cx: pc[0], cy: pc[1], r: 3.4,
-        fill: rows[k].cat.color || "#b9d9eb", stroke: "#0f1115", "stroke-width": 1.2 }));
-      var ang = -Math.PI / 2 + (2 * Math.PI * k) / n;
-      var dx = Math.cos(ang), dy = Math.sin(ang);
-      var lx = cx + (R + 22) * dx, ly = cy + (R + 22) * dy;
-      var anchor = Math.abs(dx) < 0.25 ? "middle" : (dx > 0 ? "start" : "end");
-      if (Math.abs(dy) > 0.9) ly += dy > 0 ? 10 : -8;
-      var t1 = stext(lx, ly, shortCat(rows[k].cat.name), null,
-        rows[k].cat.color || "#b9d9eb", anchor, 700);
-      t1.setAttribute("class", "rl1");
-      var t2 = stext(lx, ly + 15, num[k] + "/" + den[k], null, "#9aa0a6", anchor);
-      t2.setAttribute("class", "rl2");
-      var tt = mk("title", {});
-      tt.textContent = rows[k].cat.name + " — " + lab[k];
-      t1.appendChild(tt);
-      svg.appendChild(t1);
-      svg.appendChild(t2);
-    }
-    host.appendChild(svg);
-  }
-  function radarRows(taughtList) {
-    var all = tally(S.skills), th = tally(taughtList), out = [], k, id, a, t;
-    for (k = 0; k < CATS.length; k++) {
-      id = CATS[k].id;
-      a = all.byCat[id] || { total: 0, checked: 0 };
-      t = th.byCat[id] || { total: 0, checked: 0 };
-      out.push({ cat: CATS[k], total: a.total, checkedAll: a.checked,
-        taught: t.total, checked: t.checked });
-    }
-    return out;
-  }
-  function radarKey(host, rows, scale, ringTxt) {
-    clear(host);
-    var k = el("div", "radarkey"), taught = 0, total = 0, q;
-    for (q = 0; q < rows.length; q++) { taught += rows[q].taught; total += rows[q].total; }
-    var a = add(k, el("div"));
-    add(a, el("i", "fill"));
-    add(a, el("span", null, "Skills you have checked"));
-    if (scale === "taught") {
-      var b = add(k, el("div"));
-      add(b, el("i", "dash"));
-      add(b, el("span", null, "Outer ring · " + ringTxt + " (" + taught + " skills)"));
-    } else {
-      var c = add(k, el("div"));
-      add(c, el("i", "dash"));
-      add(c, el("span", null, ringTxt + " (" + taught + " of " + total + " skills)"));
-      var d = add(k, el("div"));
-      add(d, el("i", null));
-      add(d, el("span", null, "Outer ring · every skill in that category"));
-    }
-    host.appendChild(k);
-    return k;
-  }
 
   /* ── shared bits of chrome ──────────────────────────────────────── */
   function courseName() { return S.course.code + " · " + S.course.title; }
@@ -312,9 +195,9 @@
   }
   function dots(depth) {
     var names = ["", "aware of it", "can use it", "can design with it"];
-    var d = el("span", "dots"), k, b;
+    var d = el("span", "dots"), k;
     var lvl = Math.max(1, Math.min(3, Number(depth) || 1));
-    for (k = 1; k <= 3; k++) { b = add(d, el("b", k <= lvl ? "on" : null)); }
+    for (k = 1; k <= 3; k++) add(d, el("b", k <= lvl ? "on" : null));
     add(d, el("span", "dl", "depth " + lvl));
     d.title = "Depth " + lvl + " of 3 — " + names[lvl];
     d.setAttribute("aria-label", "Depth " + lvl + " of 3: " + names[lvl]);
@@ -345,54 +228,133 @@
     return c;
   }
 
-  /* ── skill card (session page) ──────────────────────────────────── */
-  function skillCard(skill, sessionN, onToggle) {
-    var card = el("div", "sk");
+  /* ── code blocks (dark, monospace, newlines preserved, copy button) ─ */
+  function copyToClipboard(text, btn) {
+    var original = "copy";
+    function done(ok) {
+      btn.textContent = ok ? "copied" : "copy failed";
+      btn.className = "btn tiny copy noprint" + (ok ? " ok" : "");
+      window.setTimeout(function () {
+        btn.textContent = original;
+        btn.className = "btn tiny copy noprint";
+      }, 1600);
+    }
+    function legacy() {
+      try {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "readonly");
+        ta.style.position = "fixed";
+        ta.style.left = "-2000px";
+        ta.style.top = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        var ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+        done(!!ok);
+      } catch (e) { done(false); }
+    }
+    if (window.navigator && window.navigator.clipboard && window.navigator.clipboard.writeText) {
+      try {
+        window.navigator.clipboard.writeText(text).then(function () { done(true); }, legacy);
+        return;
+      } catch (e) { /* fall through */ }
+    }
+    legacy();
+  }
+  /* code: string · chipLabel: optional small chip (deck) · what: for a11y label */
+  function codeBlock(code, chipLabel, what) {
+    var body = txt(code).replace(/\s+$/, "");
+    var wrap = el("div", "cb");
+    var head = add(wrap, el("div", "cbh"));
+    if (chipLabel) add(head, el("span", "chip deck", txt(chipLabel)));
+    else add(head, el("span", "chip deck dimchip", "C++"));
+    var btn = add(head, el("button", "btn tiny copy noprint", "copy"));
+    btn.type = "button";
+    btn.setAttribute("aria-label", "Copy the code" + (what ? " for " + what : ""));
+    var pre = add(wrap, el("pre", "code"));
+    add(pre, el("code", null, body));
+    btn.addEventListener("click", function () { copyToClipboard(body, btn); });
+    return wrap;
+  }
+
+  /* ── answer text: plain text, except a ``` fenced block → code card ─ */
+  function renderRichText(host, source, what) {
+    var s = txt(source);
+    var parts = s.split("```"), k, q;
+    for (k = 0; k < parts.length; k++) {
+      if (k % 2 === 1) {
+        /* inside a fence: drop an optional language tag on the first line */
+        var code = parts[k];
+        if (/\r?\n/.test(code)) code = code.replace(/^[ \t]*[A-Za-z0-9+#.\-]*[ \t]*\r?\n/, "");
+        code = code.replace(/^[\r\n]+/, "").replace(/\s+$/, "");
+        if (code) host.appendChild(codeBlock(code, null, what));
+      } else {
+        var paras = parts[k].split(/\n{2,}/);
+        for (q = 0; q < paras.length; q++) {
+          var t = paras[q].replace(/^\s+/, "").replace(/\s+$/, "");
+          if (t) add(host, el("p", "ap", t));
+        }
+      }
+    }
+  }
+
+  /* ── a skill row: one compact line, evidence behind a toggle ─────── */
+  function skillRow(skill, sessionN, onToggle) {
+    var row = el("div", "srow");
+    row.id = "skill-" + domId(skill.id);
     var cat = catOf(skill.category);
-    card.style.borderLeftColor = cat.color || "#333a47";
+    row.style.borderLeftColor = cat.color || "#333a47";
+
     var cb = el("input");
     cb.type = "checkbox";
     cb.id = "cb-" + skill.id;
     cb.checked = store.get(skill.id);
     cb.setAttribute("aria-label", "I can do this: " + skill.name);
-    if (cb.checked) card.className = "sk done";
     cb.addEventListener("change", function () {
       store.set(skill.id, cb.checked);
-      card.className = cb.checked ? "sk done" : "sk";
+      row.className = cb.checked ? "srow done" : "srow";
       if (onToggle) onToggle();
     });
-    card.appendChild(cb);
-    var bd = add(card, el("div", "bd"));
-    var hd = add(bd, el("div", "hd"));
-    var lab = add(hd, el("label", "nm", skill.name));
+    if (cb.checked) row.className = "srow done";
+    row.appendChild(cb);
+
+    var bd = add(row, el("div", "bd"));
+    var line = add(bd, el("div", "ln"));
+    var lab = add(line, el("label", "nm", skill.name));
     lab.setAttribute("for", cb.id);
-    if (skill.interview) add(hd, el("span", "pill iv", "interview"));
-    if (sessionN !== undefined && skill.introduced === sessionN) add(hd, el("span", "pill new", "new this week"));
-    else if (sessionN !== undefined) add(hd, el("span", "pill", "practised again"));
-    add(bd, el("div", "can", skill.can));
-    var ft = add(bd, el("div", "ft"));
-    ft.appendChild(dots(skill.depth));
-    var seen = [];
+    add(line, el("span", "can", skill.can));
+    var tags = add(line, el("span", "tgs"));
+    if (skill.interview) add(tags, el("span", "pill iv", "interview"));
+    if (sessionN !== undefined && skill.introduced === sessionN) add(tags, el("span", "pill new", "new"));
+
+    var det = add(bd, el("details", "where noprint"));
+    var sm = add(det, el("summary", null, "where it's practised"));
+    sm.setAttribute("aria-label", "Where " + skill.name + " is practised");
+    var inner = add(det, el("div", "wb"));
+    var meta = add(inner, el("div", "wmeta"));
+    meta.appendChild(dots(skill.depth));
+    var seen = [], k;
     if (skill.introduced) seen.push(skill.introduced);
     if (Array.isArray(skill.practised)) {
-      for (var k = 0; k < skill.practised.length; k++) {
+      for (k = 0; k < skill.practised.length; k++) {
         if (seen.indexOf(skill.practised[k]) < 0) seen.push(skill.practised[k]);
       }
     }
     seen.sort(function (a, b) { return a - b; });
-    add(ft, el("span", "pill", "sessions " + seen.join(", ")));
-    bd.appendChild(chipsFor(skill));
-    card.__cb = cb;
-    return card;
+    add(meta, el("span", "pill", "sessions " + seen.join(", ")));
+    add(meta, el("span", "pill", catOf(skill.category).name));
+    inner.appendChild(chipsFor(skill));
+    row.__cb = cb;
+    return row;
   }
 
-  /* ═══════════════ PAGE: index ═════════════════════════════════════ */
+  /* ═══════════════ PAGE: index — the focus timeline ════════════════ */
   function renderIndex() {
     document.title = S.course.code + " · Skills Dashboard";
-    buildNav([{ label: "Skills dashboard" }], { label: "All skills →", href: "skills.html" });
+    buildNav([{ label: "Session focus" }], { label: "All skills →", href: "skills.html" });
     buildFooter();
 
-    /* header */
     $("hKicker").textContent = S.course.institution + " · " + S.course.term +
       " · " + SESS.length + " sessions";
     $("hCode").textContent = S.course.code;
@@ -412,73 +374,54 @@
     hlink("GitHub", "Starter repository", S.course.starter_url);
     hlink("Companion", "Interactive course companion", S.course.companion_url);
 
-    function refresh() {
-      var all = tally(S.skills);
-      var taught = taughtThrough(TAUGHT_N);
-      var tt = tally(taught);
+    var NQ = ivCountAll();
 
-      /* stats */
-      $("stChecked").textContent = all.checked + " / " + all.total;
-      $("stPct").textContent = pct(all.checked, all.total) + "%";
-      $("stTaught").textContent = tt.checked + " / " + tt.total;
-      $("stSession").textContent = TAUGHT_N > 0 ? "Session " + TAUGHT_N : "Not started";
-      var ivT = 0, ivC = 0, k;
+    function refresh() {
+      var all = tally(S.skills), k;
+      var ivT = 0, ivC = 0;
       for (k = 0; k < S.skills.length; k++) {
         if (S.skills[k].interview) { ivT++; if (store.get(S.skills[k].id)) ivC++; }
       }
-      $("stInterview").textContent = ivC + " / " + ivT;
+      $("progLine").textContent = all.checked + " / " + all.total + " skills checked (" +
+        pct(all.checked, all.total) + "%) · " + ivC + " / " + ivT + " interview skills · " +
+        NQ + " interview question" + (NQ === 1 ? "" : "s") + " across the term" +
+        (TAUGHT_N > 0 ? " · latest session " + TAUGHT_N : " · term not started");
       $("barAll").style.width = pct(all.checked, all.total) + "%";
-      $("barTxt").textContent = pct(all.checked, all.total) + "% of all " + all.total +
-        " skills in the course · " + tt.checked + " of the " + tt.total +
-        " taught so far (" + pct(tt.checked, tt.total) + "%)";
 
-      /* radar */
-      var rows = radarRows(taught);
-      radar($("radar"), rows, "total", "Skills checked against skills taught so far");
-      radarKey($("radarKey"), rows, "total",
-        "Skills taught so far, through session " + (TAUGHT_N || 0));
-
-      /* category legend */
-      var cs = $("cats");
-      clear(cs);
-      for (k = 0; k < CATS.length; k++) {
-        var c = CATS[k], cc = all.byCat[c.id] || { total: 0, checked: 0 };
-        var tc = tt.byCat[c.id] || { total: 0, checked: 0 };
-        var card = add(cs, el("div", "catcard"));
-        card.style.borderLeftColor = c.color || "#333a47";
-        add(card, el("div", "cn", c.name));
-        add(card, el("div", "cc", cc.checked + " checked · " + tc.total + " taught · " +
-          cc.total + " total"));
-        var bar = add(card, el("div", "bar thin"));
-        add(bar, el("i")).style.width = pct(cc.checked, cc.total) + "%";
-      }
-
-      /* session grid */
-      var g = $("sessions");
-      clear(g);
+      var ol = $("timeline");
+      clear(ol);
       for (k = 0; k < SESS.length; k++) {
-        var s = SESS[k], list = skillsOf(s), t = tally(list);
-        var a = add(g, el("a", "sx" + (s.n > TAUGHT_N ? " future" : "")));
+        var s = SESS[k], f = focusOf(s.n), list = skillsOf(s), t = tally(list);
+        var li = add(ol, el("li", "tli"));
+        var a = add(li, el("a", "trow" + (s.n > TAUGHT_N ? " future" : "")));
         a.href = "session-" + s.n + ".html";
-        var top = add(a, el("div", "top"));
-        add(top, el("span", "n", "Session " + s.n));
-        add(top, el("span", "dt", fmtDate(s.date)));
-        add(a, el("div", "ti", s.title));
-        var meta = add(a, el("div", "meta"));
-        meta.textContent = list.length + " skill" + (list.length === 1 ? "" : "s");
-        var nnew = 0;
-        for (var q = 0; q < list.length; q++) if (list[q].introduced === s.n) nnew++;
-        if (nnew) meta.textContent += " · " + nnew + " new";
-        if (s.exam) {
-          meta.appendChild(document.createTextNode(" · "));
-          add(meta, el("span", "pill warn", String(s.exam)));
+        a.setAttribute("aria-label", "Session " + s.n + ": " +
+          (f && f.focus ? f.focus : s.title) + ". " + t.checked + " of " + t.total +
+          " skills checked.");
+
+        var c1 = add(a, el("div", "tn"));
+        add(c1, el("span", "num", String(s.n)));
+        add(c1, el("span", "dt", fmtDate(s.date)));
+
+        var c2 = add(a, el("div", "tf"));
+        add(c2, el("div", "fo", f && f.focus ? f.focus : s.title));
+        /* the session title in small type under the focus — unless the focus is
+           missing, in which case the title is already the big line */
+        if (f && f.focus) add(c2, el("div", "ti", s.title));
+        var tags = add(c2, el("div", "tt"));
+        if (s.exam) add(tags, el("span", "pill warn", String(s.exam)));
+        if (!f) add(tags, el("span", "pill", "focus content coming"));
+        else if (ivOf(f).length) {
+          add(tags, el("span", "pill", ivOf(f).length + " interview questions"));
         }
-        var bar = add(a, el("div", "bar"));
+
+        var c3 = add(a, el("div", "tp"));
+        var bar = add(c3, el("div", "bar thin"));
         add(bar, el("i")).style.width = pct(t.checked, t.total) + "%";
-        var pr = add(a, el("div", "prog"));
-        add(pr, el("span", null, t.checked + " / " + t.total + " checked"));
-        add(pr, el("span", null, pct(t.checked, t.total) + "%"));
-        add(a, el("div", "go", "Open checklist"));
+        add(c3, el("div", "pg", t.checked + " / " + t.total + " skills · " +
+          pct(t.checked, t.total) + "%"));
+
+        add(a, el("div", "tg", "Open session"));
       }
     }
 
@@ -490,9 +433,7 @@
         refresh();
       }
     });
-    if (!store.available()) {
-      $("lsWarn").hidden = false;
-    }
+    if (!store.available()) $("lsWarn").hidden = false;
     window.addEventListener("storage", function (ev) {
       if (!ev.key || ev.key.indexOf(PREFIX) === 0) refresh();
     });
@@ -510,31 +451,53 @@
     return v;
   }
 
+  function levelInfo(level) {
+    var raw = txt(level).toLowerCase();
+    if (raw.indexOf("warm") >= 0) return { cls: "lv-warm", label: "warm-up" };
+    if (raw.indexOf("senior") >= 0) return { cls: "lv-senior", label: "senior" };
+    if (raw.indexOf("core") >= 0) return { cls: "lv-core", label: "core" };
+    return { cls: "lv-core", label: raw ? txt(level) : "core" };
+  }
+
   function renderSession() {
     var n = sessionNumber();
     if (n === null) { window.location.replace("index.html"); return; }
     var s = sessByN[n];
+    var f = focusOf(n);
     var list = skillsOf(s);
+    var concepts = conceptsOf(f);
+    var questions = ivOf(f);
+    var paras = hftParas(f);
+    var headline = (f && f.focus) ? String(f.focus) : s.title;
 
-    document.title = "Session " + n + " · " + s.title + " — " + S.course.code + " skills";
+    document.title = "Session " + n + " · " + headline + " — " + S.course.code + " skills";
     var crumbs = [];
     if (sessByN[n - 1]) crumbs.push({ label: "← Session " + (n - 1), href: "session-" + (n - 1) + ".html" });
-    crumbs.push({ label: "Session " + n + " · " + s.title });
+    crumbs.push({ label: "Session " + n + " · " + headline });
     if (sessByN[n + 1]) crumbs.push({ label: "Session " + (n + 1) + " →", href: "session-" + (n + 1) + ".html" });
     buildNav(crumbs, { label: "All skills →", href: "skills.html" });
     buildFooter();
 
-    $("hKicker").textContent = "Session " + n + " of " + SESS.length + " · " + fmtDate(s.date) +
-      " · " + S.course.code;
-    $("hTitle").textContent = s.title;
+    /* ── 1 · header ─────────────────────────────────────────────── */
+    $("hKicker").textContent = "Session " + n + " of " + SESS.length + " · " + fmtDate(s.date);
+    /* the session title sits small above the focus; with no focus the title IS
+       the big title, so don't print it twice */
+    if (f && f.focus) { $("hSession").textContent = s.title; show($("hSession"), true); }
+    else show($("hSession"), false);
+    $("hFocus").textContent = headline;
+    var tag = $("hTag");
+    if (f && f.tagline) { tag.textContent = String(f.tagline); show(tag, true); }
+    else show(tag, false);
+
     var badges = $("hBadges");
     clear(badges);
+    if (f && f.focus) add(badges, el("span", "pill acc", "main focus"));
     if (s.exam) add(badges, el("span", "pill warn", String(s.exam) + " exam in this session"));
     var nnew = 0, k;
     for (k = 0; k < list.length; k++) if (list[k].introduced === n) nnew++;
-    add(badges, el("span", "pill acc", list.length + " skills · " + nnew + " new this week"));
+    add(badges, el("span", "pill", list.length + " skills · " + nnew + " new this week"));
+    if (questions.length) add(badges, el("span", "pill", questions.length + " interview questions"));
 
-    /* links */
     var hl = $("hLinks");
     clear(hl);
     function box(kind, label, url, due) {
@@ -555,67 +518,149 @@
     if (s.project) box("Project", s.project.label || "Project", s.project.url, s.project.due);
     if (s.companion_url) box("Companion", "Interactive page for this session", s.companion_url, null);
 
-    var hosts = {};
-    function refresh() {
-      var t = tally(list);
-      $("stHere").textContent = t.checked + " / " + t.total;
-      $("stHerePct").textContent = pct(t.checked, t.total) + "%";
-      var cum = taughtThrough(n), ct = tally(cum);
-      $("stCum").textContent = ct.checked + " / " + ct.total;
-      var ivT = 0, ivC = 0, q;
-      for (q = 0; q < list.length; q++) {
-        if (list[q].interview) { ivT++; if (store.get(list[q].id)) ivC++; }
+    /* ── 2 · the focus ──────────────────────────────────────────── */
+    var ch = $("concepts");
+    clear(ch);
+    if (!f) {
+      var note = add(ch, el("div", "note"));
+      add(note, el("b", null, "Focus content coming. "));
+      note.appendChild(document.createTextNode(
+        "The main technical focus, the HFT link and the interview questions for this session are not " +
+        "written yet. The checklist below is live and your ticks are kept."));
+      $("focusH").textContent = "The focus";
+    } else if (!concepts.length) {
+      add(ch, el("p", "sub", "No concepts are listed for this focus yet."));
+    } else {
+      for (k = 0; k < concepts.length; k++) {
+        var c = concepts[k] || {};
+        var card = add(ch, el("article", "concept"));
+        var hd = add(card, el("div", "chd"));
+        add(hd, el("div", "cnum", String(k + 1)));
+        var ht = add(hd, el("div", "ctt"));
+        add(ht, el("h3", "cti", txt(c.title) || "Concept " + (k + 1)));
+        if (c.text) add(ht, el("p", "ctx", txt(c.text)));
+        if (c.code) card.appendChild(codeBlock(c.code, c.deck, txt(c.title)));
+        else if (c.deck) add(card, el("div", "chips")).appendChild(el("span", "chip deck", txt(c.deck)));
       }
-      $("stIv").textContent = ivC + " / " + ivT;
+    }
+    show($("focus-sec"), true);
+
+    /* ── 3 · the checklist ──────────────────────────────────────── */
+    var host = $("skills");
+    clear(host);
+    function afterToggle() { refreshCounts(); }
+    for (k = 0; k < list.length; k++) host.appendChild(skillRow(list[k], n, afterToggle));
+    if (!list.length) add(host, el("p", "empty", "No skills are listed for this session yet."));
+
+    function refreshCounts() {
+      var t = tally(list), q;
       $("barHere").style.width = pct(t.checked, t.total) + "%";
-      var rows = radarRows(cum);
-      radar($("radar"), rows, "taught",
-        "Skills checked among the skills taught in sessions 1 to " + n);
-      radarKey($("radarKey"), rows, "taught", "everything taught through session " + n);
-      /* keep any checkboxes in sync */
+      $("ckCount").textContent = t.checked + " of " + t.total + " ticked (" +
+        pct(t.checked, t.total) + "%) · tick one only when the sentence is true of you";
       for (q = 0; q < list.length; q++) {
         var cb = $("cb-" + list[q].id);
         if (cb) {
           cb.checked = store.get(list[q].id);
-          var card = cb.parentNode;
-          if (card) card.className = cb.checked ? "sk done" : "sk";
+          var row = cb.parentNode;
+          if (row) row.className = cb.checked ? "srow done" : "srow";
         }
       }
     }
-
-    /* skills grouped by category, categories in SKILLS.categories order */
-    var host = $("skills");
-    clear(host);
-    for (k = 0; k < CATS.length; k++) {
-      var c = CATS[k], mine = [], q;
-      for (q = 0; q < list.length; q++) if (list[q].category === c.id) mine.push(list[q]);
-      if (!mine.length) continue;
-      var block = add(host, el("section", "catblock"));
-      block.style.borderTop = "none";
-      block.style.padding = "0";
-      block.style.maxWidth = "none";
-      var bar = add(block, el("div", "catbar"));
-      var an = add(bar, el("div", "an", c.name));
-      an.style.color = c.color || "#b9d9eb";
-      add(bar, el("div", "ad", mine.length + " skill" + (mine.length === 1 ? "" : "s")));
-      var wrap = add(block, el("div", "skills"));
-      for (q = 0; q < mine.length; q++) wrap.appendChild(skillCard(mine[q], n, refresh));
-    }
-    if (!list.length) add(host, el("p", "empty", "No skills are listed for this session yet."));
-
-    refresh();
+    refreshCounts();
 
     $("btnAll").addEventListener("click", function () {
       for (var q = 0; q < list.length; q++) store.set(list[q].id, true);
-      refresh();
+      refreshCounts();
     });
     $("btnNone").addEventListener("click", function () {
       for (var q = 0; q < list.length; q++) store.set(list[q].id, false);
-      refresh();
+      refreshCounts();
     });
     $("btnPrint").addEventListener("click", function () { window.print(); });
 
-    /* prev / next */
+    /* ── 4 · why this matters in HFT ────────────────────────────── */
+    var hh = $("hft");
+    clear(hh);
+    if (paras.length || (f && f.hft && f.hft.example)) {
+      for (k = 0; k < paras.length; k++) add(hh, el("p", "hp", txt(paras[k])));
+      var ex = f && f.hft ? f.hft.example : null;
+      if (ex && (ex.code || ex.text)) {
+        var card = add(hh, el("div", "arena"));
+        add(card, el("h3", "ath", txt(ex.title) || "In the arena"));
+        if (ex.text) add(card, el("p", "ctx", txt(ex.text)));
+        if (ex.code) card.appendChild(codeBlock(ex.code, null, txt(ex.title) || "the arena example"));
+      }
+      show($("hft-sec"), true);
+    } else {
+      show($("hft-sec"), false);
+    }
+
+    /* ── 5 · interview questions ────────────────────────────────── */
+    function jumpToSkill(id) {
+      var row = $("skill-" + domId(id));
+      if (!row) return;
+      try { row.scrollIntoView({ block: "center", behavior: "smooth" }); }
+      catch (e) { row.scrollIntoView(); }
+      var base = row.className.replace(/\s*flash/g, "");
+      row.className = base + " flash";
+      window.setTimeout(function () { row.className = row.className.replace(/\s*flash/g, ""); }, 2400);
+      if (row.__cb && row.__cb.focus) { try { row.__cb.focus({ preventScroll: true }); } catch (e2) { /* ignore */ } }
+    }
+
+    var ih = $("iv");
+    clear(ih);
+    if (questions.length) {
+      for (k = 0; k < questions.length; k++) {
+        (function (item, idx) {
+          var d = add(ih, el("details", "qa"));
+          var sm = add(d, el("summary"));
+          add(sm, el("span", "qn", String(idx + 1)));
+          add(sm, el("span", "qt", txt(item.q)));
+          var li2 = levelInfo(item.level);
+          add(sm, el("span", "pill lv " + li2.cls, li2.label));
+          var body = add(d, el("div", "qb"));
+          renderRichText(body, item.a, "the answer to question " + (idx + 1));
+          if (item.skill && byId[item.skill]) {
+            var rel = add(body, el("a", "rel"));
+            rel.href = "#skill-" + domId(item.skill);
+            add(rel, el("span", "rl", "related skill"));
+            add(rel, document.createTextNode(byId[item.skill].name));
+            rel.addEventListener("click", function (ev) {
+              if (ev.preventDefault) ev.preventDefault();
+              jumpToSkill(item.skill);
+            });
+          }
+        }(questions[k] || {}, k));
+      }
+      $("ivLead").textContent = "Answer each one out loud, then open it and compare. " +
+        questions.length + " questions, from warm-up to senior.";
+      show($("iv-sec"), true);
+    } else {
+      show($("iv-sec"), false);
+    }
+
+    function setAll(open) {
+      var ds = ih.getElementsByTagName("details"), q;
+      for (q = 0; q < ds.length; q++) ds[q].open = !!open;
+    }
+    $("btnRevealAll").addEventListener("click", function () { setAll(true); });
+    $("btnHideAll").addEventListener("click", function () { setAll(false); });
+
+    /* printing: answers expanded, then restore what the reader had open */
+    var wasOpen = null;
+    window.addEventListener("beforeprint", function () {
+      var ds = ih.getElementsByTagName("details"), q;
+      wasOpen = [];
+      for (q = 0; q < ds.length; q++) { wasOpen.push(ds[q].open); ds[q].open = true; }
+    });
+    window.addEventListener("afterprint", function () {
+      if (!wasOpen) return;
+      var ds = ih.getElementsByTagName("details"), q;
+      for (q = 0; q < ds.length && q < wasOpen.length; q++) ds[q].open = wasOpen[q];
+      wasOpen = null;
+    });
+
+    /* ── 6 · prev / next ────────────────────────────────────────── */
     var pn = $("pn");
     clear(pn);
     function nav(dir, m) {
@@ -623,26 +668,27 @@
       var a = add(pn, el("a", "pncard"));
       a.href = "session-" + m + ".html";
       add(a, el("div", "nl", dir === -1 ? "← Previous session" : "Next session →"));
-      add(a, el("div", "nt", "Session " + m + " · " + sessByN[m].title));
-      add(a, el("div", "sub", fmtDate(sessByN[m].date)));
+      var fm = focusOf(m);
+      add(a, el("div", "nt", fm && fm.focus ? String(fm.focus) : sessByN[m].title));
+      add(a, el("div", "sub", "Session " + m + " · " + fmtDate(sessByN[m].date)));
     }
     nav(-1, n - 1);
     nav(1, n + 1);
     if (!pn.firstChild) {
-      var a = add(pn, el("a", "pncard"));
-      a.href = "index.html";
-      add(a, el("div", "nl", "Back"));
-      add(a, el("div", "nt", "Course overview"));
+      var a2 = add(pn, el("a", "pncard"));
+      a2.href = "index.html";
+      add(a2, el("div", "nl", "Back"));
+      add(a2, el("div", "nt", "Course overview"));
     }
     window.addEventListener("storage", function (ev) {
-      if (!ev.key || ev.key.indexOf(PREFIX) === 0) refresh();
+      if (!ev.key || ev.key.indexOf(PREFIX) === 0) refreshCounts();
     });
   }
 
   /* ═══════════════ PAGE: catalogue ═════════════════════════════════ */
   function renderCatalogue() {
     document.title = "All skills · " + S.course.code;
-    buildNav([{ label: "All skills" }], { label: "← Course overview", href: "index.html" });
+    buildNav([{ label: "All skills" }], { label: "← Session focus timeline", href: "index.html" });
     buildFooter();
     $("hKicker").textContent = S.course.code + " · " + S.course.term + " · " +
       S.skills.length + " skills across " + SESS.length + " sessions";

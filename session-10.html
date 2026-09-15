@@ -13,53 +13,63 @@
 
 <main id="app">
 
-  <!-- ══════════ SESSION HEADER ══════════ -->
+  <!-- ══════════ 1 · HEADER: the main technical focus ══════════ -->
   <section id="hero">
     <div class="kicker" id="hKicker"></div>
-    <h1 id="hTitle"></h1>
-    <div class="row" id="hBadges" style="margin-top:10px"></div>
+    <div class="stitle" id="hSession"></div>
+    <h1 id="hFocus"></h1>
+    <p class="lead" id="hTag"></p>
+    <div class="row" id="hBadges" style="margin-top:12px"></div>
     <div class="links" id="hLinks"></div>
   </section>
 
-  <!-- ══════════ COVERAGE ══════════ -->
-  <section id="coverage" aria-labelledby="covH">
-    <div class="kicker">Where you stand</div>
-    <h2 id="covH">This session, and everything up to it</h2>
-    <div class="split" style="margin-top:16px">
-      <div>
-        <div class="radarpanel" id="radar"></div>
-        <div id="radarKey"></div>
-      </div>
-      <div class="stack">
-        <div class="stats">
-          <div class="stat"><div class="sl">Checked here</div><div class="sv acc" id="stHere">—</div></div>
-          <div class="stat"><div class="sl">This session</div><div class="sv" id="stHerePct">—</div></div>
-          <div class="stat"><div class="sl">Cumulative</div><div class="sv ok" id="stCum">—</div></div>
-          <div class="stat"><div class="sl">Interview skills</div><div class="sv" id="stIv">—</div></div>
-        </div>
-        <div class="panel tight">
-          <h3>This session</h3>
-          <div class="bar"><i id="barHere"></i></div>
-          <p class="sub">Tick a skill only when you can say the sentence and then do it —
-          from an empty file, with no notes open.</p>
-          <div class="row noprint" style="margin-top:12px">
-            <button class="btn" type="button" id="btnAll">Mark all in this session</button>
-            <button class="btn danger" type="button" id="btnNone">Clear this session</button>
-            <button class="btn" type="button" id="btnPrint">Print this checklist</button>
-          </div>
-        </div>
-      </div>
-    </div>
+  <!-- ══════════ 2 · THE FOCUS ══════════ -->
+  <section id="focus-sec" aria-labelledby="focusH">
+    <div class="kicker">The focus</div>
+    <h2 id="focusH">The focus, step by step</h2>
+    <div id="concepts"></div>
   </section>
 
-  <!-- ══════════ SKILLS ══════════ -->
+  <!-- ══════════ 3 · CHECKLIST ══════════ -->
   <section id="skills-sec" aria-labelledby="skH">
     <div class="kicker">The checklist</div>
-    <h2 id="skH">Skills, grouped by category</h2>
+    <h2 id="skH">What you should be able to do after this session</h2>
+    <div class="cktools">
+      <div class="ckprog">
+        <div class="bar slim"><i id="barHere"></i></div>
+        <div class="sub" id="ckCount">&nbsp;</div>
+      </div>
+      <div class="row noprint">
+        <button class="btn" type="button" id="btnAll">Mark all</button>
+        <button class="btn danger" type="button" id="btnNone">Clear</button>
+        <button class="btn" type="button" id="btnPrint">Print this page</button>
+      </div>
+    </div>
     <div id="skills"></div>
+    <p class="sub" style="margin-top:12px">Tick a skill only when you can say the sentence and then do
+    it — from an empty file, with no notes open.</p>
   </section>
 
-  <!-- ══════════ PREV / NEXT ══════════ -->
+  <!-- ══════════ 4 · WHY IT MATTERS IN HFT ══════════ -->
+  <section id="hft-sec" aria-labelledby="hftH">
+    <div class="kicker">The link with HFT</div>
+    <h2 id="hftH">Why this matters in HFT</h2>
+    <div id="hft"></div>
+  </section>
+
+  <!-- ══════════ 5 · INTERVIEW QUESTIONS ══════════ -->
+  <section id="iv-sec" aria-labelledby="ivH">
+    <div class="kicker">Interview</div>
+    <h2 id="ivH">Interview questions</h2>
+    <p class="lead" id="ivLead">Answer each one out loud before you open it.</p>
+    <div class="row noprint" style="margin-bottom:14px">
+      <button class="btn" type="button" id="btnRevealAll">Reveal all</button>
+      <button class="btn" type="button" id="btnHideAll">Hide all</button>
+    </div>
+    <div id="iv"></div>
+  </section>
+
+  <!-- ══════════ 6 · PREV / NEXT ══════════ -->
   <section id="nav-sec" class="noprint" aria-label="Session navigation">
     <div class="pn" id="pn"></div>
   </section>
@@ -72,6 +82,7 @@
      Regenerate with tools/make_session_pages.py after editing session.html. -->
 <script>window.HFT_SESSION = 10;</script>
 <script src="skills.js"></script>
+<script src="focus.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
