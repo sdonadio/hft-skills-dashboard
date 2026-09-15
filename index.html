@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <link rel="icon" href="data:," />
 <title>Skills Dashboard</title>
-<meta name="description" content="One technical focus per session: what it is, why it matters in HFT, and the interview questions that follow." />
+<!-- app.js rewrites this from FOCUS.meta.link_phrase -->
+<meta name="description" content="One technical focus per session: what it is, why it matters, and the interview questions that follow." />
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body data-page="index">
@@ -18,10 +19,8 @@
   <section id="hero">
     <div class="kicker" id="hKicker"></div>
     <h1><span id="hCode"></span><br /><span id="hTitle"></span></h1>
-    <p class="lead">Every session of this course is built around <em class="hi">one main technical
-    focus</em>. Each session page reads top to bottom: the focus explained in code, the skills you should
-    then be able to claim, why it matters in an HFT system, and the interview questions that follow from
-    it.</p>
+    <!-- filled by app.js: the "why it matters" wording comes from FOCUS.meta -->
+    <p class="lead" id="hLead"></p>
     <p class="progline" id="progLine">&nbsp;</p>
     <div class="bar slim" style="max-width:520px"><i id="barAll"></i></div>
     <div class="links" id="hLinks"></div>

@@ -1,19 +1,23 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   HFT Skills Dashboard · shared stylesheet (identical on every page)
-   Visual language: the Low-Latency Trading Arena dark theme,
-   re-accented in Columbia blue (CU_BLUE #B9D9EB).
+   Skills Dashboard · shared stylesheet (identical on every page, every course)
+   Visual language: the Low-Latency Trading Arena dark theme.
    No build step, no framework, no CDN.
+
+   The accent below is the default (Columbia blue, CU_BLUE #B9D9EB). A course
+   overrides it from its data — SKILLS.course.accent / .accent_2 — and app.js
+   re-declares --accent* on :root at startup. Nothing else is themed, so a new
+   course never needs to touch this file.
 
    Layout map
      index    hero → progress line → .tl focus timeline → privacy panel
      session  hero (focus) → .concept cards → .srow checklist
-              → .hp / .arena HFT link → details.qa interview → .pn
+              → .hp / .arena link section → details.qa interview → .pn
      skills   hero → filters → table.cat
    ═══════════════════════════════════════════════════════════════════════ */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --accent:       #2e6db4;   /* medium Columbia blue — fills, bars */
-  --accent-2:     #b9d9eb;   /* CU_BLUE — link + label ink on dark */
+  --accent:       #2e6db4;   /* default: medium Columbia blue — fills, bars */
+  --accent-2:     #b9d9eb;   /* default: CU_BLUE — link + label ink on dark */
   --accent-3:     #e8f3fa;
   --accent-deep:  #0b3d6e;
   --accent-rgb:   46,109,180;
@@ -236,7 +240,7 @@ details.where>summary:hover{color:var(--accent-2)}
 .dots .dl{font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--dim);
   margin-left:4px}
 
-/* ── why this matters in HFT ────────────────────────────────────────── */
+/* ── the "why this matters" link section ────────────────────────────── */
 .hp{color:var(--ink-dim);font-size:13.8px;margin:12px 0;max-width:84ch}
 .arena{margin-top:18px;background:var(--panel);border:1px solid var(--line);
   border-left:4px solid var(--accent);border-radius:12px;padding:14px 17px 17px;min-width:0}
