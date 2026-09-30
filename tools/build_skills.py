@@ -92,6 +92,15 @@ def lab(session, n, part):
         return {"type": "lab", "session": session,
                 "label": "Lab week 5 Part B \u00b7 %s" % part,
                 "url": "%sweek05.md#part-b-crtp-and-compile-time-design" % LABS}
+    # Session 10 has ONE lab (week11.md): Week-12 material = Part B (steps 5-7) + Demos (steps 8-11).
+    if session == 10 and n == 12 and part.startswith("step 9"):
+        return {"type": "lab", "session": session,
+                "label": "Lab week 11 Demos \u00b7 %s" % part,
+                "url": "%sweek11.md#demos-instructor-led-or-at-home" % LABS}
+    if session == 10 and n == 12:
+        return {"type": "lab", "session": session,
+                "label": "Lab week 11 Part B \u00b7 %s" % part,
+                "url": "%sweek11.md#part-b-u64toa-fast-integer-to-decimal-text" % LABS}
     return {"type": "lab", "session": session,
             "label": "Lab week %d · %s" % (n, part),
             "url": "%sweek%02d.md" % (LABS, n)}
@@ -422,7 +431,7 @@ SKILLS = [
       "You can decode an ITCH/OUCH-style fixed-width message by reading fields at known offsets, byte-swapping from network order and scaling integer prices, with no digit parsing.",
       10, [], 3,
       [deck(10, "w11", "slides 6\u20137, 16"),
-       lab(10, 11, "step 6 \u2014 why fixed-width binary beats text"), hw(11), final("net")]),
+       lab(10, 11, "step 11 \u2014 why fixed-width binary beats text"), hw(11), final("net")]),
     S("tools.message-framing", "tools", "Framing a byte stream into messages",
       "You can recover message boundaries from a stream with a length prefix or a delimiter, buffer a partial read, and bounds-check a length before you index with it.",
       10, [], 3,
@@ -436,17 +445,17 @@ SKILLS = [
       "You can say why venues ship market data over UDP multicast and take order entry over TCP, and what head-of-line blocking and A/B feed arbitration mean for each.",
       10, [], 2,
       [deck(10, "w11", "slide 9"),
-       lab(10, 11, "step 5 \u2014 TCP vs UDP semantics"), final("net")]),
+       lab(10, 11, "step 8 \u2014 TCP vs UDP semantics"), final("net")]),
     S("perf.nonblocking-io", "perf", "Non-blocking sockets & readiness event loops",
       "You can drain a non-blocking socket until EAGAIN inside an epoll or kqueue readiness loop, and explain what edge-triggered mode obliges you to do.",
       10, [], 2,
       [deck(10, "w12", "slides 5\u20138"),
-       lab(10, 12, "step 5 \u2014 a non-blocking read loop"), final("net")]),
+       lab(10, 12, "step 9 \u2014 a non-blocking read loop"), final("net")]),
     S("perf.zero-copy-parse", "perf", "Zero-copy parse & hand-rolled serialization",
       "You can pull only the fields you use straight out of a frame with a view instead of building a DOM, write digits into a reused buffer on the send path, and show the p99.9 win on a replay tape.",
       10, [], 3,
       [deck(10, "w12", "slides 10\u201312, 17"),
-       lab(10, 12, "steps 1\u20134 and 6 \u2014 fast integer-to-decimal and targeted JSON extract"),
+       lab(10, 12, "steps 5\u20137 and 10 \u2014 fast integer-to-decimal and targeted JSON extract"),
        hw(12), proj(4), final("net")]),
     S("perf.batching-vs-latency", "perf", "Batching vs latency",
       "You can explain why batching buys throughput at the cost of the tail you are graded on, and why TCP_NODELAY belongs on an order path.",

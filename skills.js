@@ -2416,7 +2416,7 @@ window.SKILLS = {
         {
           "type": "lab",
           "session": 10,
-          "label": "Lab week 11 · step 6 — why fixed-width binary beats text",
+          "label": "Lab week 11 · step 11 — why fixed-width binary beats text",
           "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week11.md"
         },
         {
@@ -2500,7 +2500,7 @@ window.SKILLS = {
         {
           "type": "lab",
           "session": 10,
-          "label": "Lab week 11 · step 5 — TCP vs UDP semantics",
+          "label": "Lab week 11 · step 8 — TCP vs UDP semantics",
           "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week11.md"
         },
         {
@@ -2527,8 +2527,8 @@ window.SKILLS = {
         {
           "type": "lab",
           "session": 10,
-          "label": "Lab week 12 · step 5 — a non-blocking read loop",
-          "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week12.md"
+          "label": "Lab week 11 Demos · step 9 — a non-blocking read loop",
+          "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week11.md#demos-instructor-led-or-at-home"
         },
         {
           "type": "exam",
@@ -2554,8 +2554,8 @@ window.SKILLS = {
         {
           "type": "lab",
           "session": 10,
-          "label": "Lab week 12 · steps 1–4 and 6 — fast integer-to-decimal and targeted JSON extract",
-          "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week12.md"
+          "label": "Lab week 11 Part B · steps 5–7 and 10 — fast integer-to-decimal and targeted JSON extract",
+          "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week11.md#part-b-u64toa-fast-integer-to-decimal-text"
         },
         {
           "type": "hw",
