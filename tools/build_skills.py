@@ -7,7 +7,7 @@ exam bank group names in course/exams/hft_{midterm,final}_bank.json.
 """
 import json, os
 
-OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "skills.js")
+OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "skills.js")
 
 CANVAS = "https://courseworks2.columbia.edu/courses/252758/assignments/"
 LABS = "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/"
@@ -18,7 +18,7 @@ HW = {  # n -> (canvas id, name, due date in America/New_York)
     1:  (1714425, "HW 1 — Order-book metrics in C++", "2026-09-19"),
     2:  (1714426, "HW 2 — Pointers, references & the cost of a copy", "2026-09-26"),
     3:  (1714427, "HW 3 — Dynamic allocation, RAII & smart pointers", "2026-10-03"),
-    4:  (1714428, "HW 4 — A high-performance allocator (Memory Triathlon)", "2026-10-10"),
+    4:  (1714428, "HW 4 — A high-performance allocator + runtime polymorphism", "2026-10-10"),
     5:  (1714429, "HW 5 — Generic programming with the STL", "2026-10-17"),
     6:  (1714430, "HW 6 — CRTP & compile-time computation", "2026-10-17"),
     7:  (1714431, "HW 7 — A fast order book + a fast symbol map", "2026-10-24"),
@@ -66,7 +66,7 @@ SESSIONS = [
     (1,  "2026-09-09", "HFT Landscape & Market Microstructure",            ["w1"],        [1],      1,  0, None),
     (2,  "2026-09-16", "C++ Performance Foundations",                      ["w2"],        [2],      2,  0, None),
     (3,  "2026-09-23", "Memory Management & Smart Pointers",               ["w3"],        [3],      3,  1, None),
-    (4,  "2026-09-30", "Custom Allocators & Memory Pools",                 ["w4"],        [4],      4,  1, None),
+    (4,  "2026-09-30", "Custom Allocators & Memory Pools + Runtime Polymorphism",                 ["w4"],        [4],      4,  1, None),
     (5,  "2026-10-07", "Templates & Generic Programming + Compile-Time & Policy-Based Design (CRTP)",
                                                                            ["w5", "w6"],  [5, 6],   5,  1, None),
     (6,  "2026-10-14", "Data Structures for HFT — The Order Book",         ["w7"],        [7],      7,  2, None),
@@ -200,8 +200,8 @@ SKILLS = [
     # ------------------------------------------------------------- session 3
     S("cpp.classes-invariants", "cpp", "Classes, constructors & destructors",
       "You can establish a class invariant in the member-initialiser list, mark a converting constructor explicit, and predict construction and destruction order.",
-      3, [5], 3,
-      [deck(3, "w3", "slides 9\u201311, 18"), deck(5, "w5", "slides 16, 24"),
+      3, [], 3,
+      [deck(3, "w3", "slides 9\u201311, 18"),
        hw(3), midterm("oop")]),
     S("cpp.rule-of-five", "cpp", "Rule of zero, rule of five",
       "You can decide whether a type needs none or all five special members, and explain why declaring a destructor alone silently kills the implicit moves.",
@@ -237,7 +237,7 @@ SKILLS = [
     S("perf.object-pool", "perf", "Fixed-size object pools",
       "You can implement a fixed-size object pool whose free slots hold the free-list, so allocate and free are O(1) pointer swaps that never call the system allocator.",
       4, [7], 3,
-      [deck(4, "w4", "slides 8, 10, 15"), deck(7, "w8", "slide 7"),
+      [deck(4, "w4", "slides 8, 10, 26"), deck(7, "w8", "slide 7"),
        lab(4, 4, "steps 3\u20134 \u2014 alloc and free in O(1)"), hw(4), proj(1), final("sys")], True),
     S("cpp.placement-new", "cpp", "Placement new & explicit destruction",
       "You can construct an object into storage you already own with placement new, and destroy it by calling its destructor explicitly before reusing the slot.",
@@ -247,11 +247,26 @@ SKILLS = [
     S("perf.arena-allocator", "perf", "Arena / bump allocation and per-tick scratch",
       "You can allocate a tick's scratch from a bump pointer over a pre-owned slab, align each request, and reclaim everything with one O(1) reset.",
       4, [], 3,
-      [deck(4, "w4", "slides 9, 13, 15"), hw(4), proj(1), final("sys")]),
+      [deck(4, "w4", "slides 9, 13, 26"), hw(4), proj(1), final("sys")]),
     S("cpp.pmr", "cpp", "std::pmr memory resources",
       "You can hand a standard container your own memory by constructing a pmr container over a monotonic_buffer_resource on a stack buffer.",
       4, [], 2,
-      [deck(4, "w4", "slides 12\u201313, 15"), hw(4)]),
+      [deck(4, "w4", "slides 12\u201313, 26"), hw(4)]),
+
+    S("cpp.virtual-dispatch", "cpp", "Inheritance, virtual functions & abstract interfaces",
+      "You can define an abstract interface with pure virtual functions and a virtual destructor, use override and final correctly, and spot the slicing and delete-through-a-non-virtual-base bugs.",
+      4, [5], 3,
+      [deck(4, "w4", "slides 15\u201318, 23\u201324"),
+       lab(4, 4, "steps 7\u20138 \u2014 abstract Strategy, objects in your pool destroyed through the base pointer"),
+       lab(5, 6, "step 1 \u2014 the virtual version we replace"),
+       hw(4), midterm("oop"), final("core")], True),
+    S("perf.virtual-cost", "perf", "What a virtual call costs",
+      "You can describe the vptr/vtable indirection, explain that the real bill is the indirect branch and the inlining you lose, and say where a virtual still belongs in a trading system.",
+      4, [5], 3,
+      [deck(4, "w4", "slides 19\u201322"),
+       lab(4, 4, "steps 9\u201310 \u2014 what virtual costs (bench), final & devirtualization"),
+       lab(5, 6, "step 2 \u2014 CRTP against the virtual baseline"),
+       hw(4), midterm("oop"), final("core")], True),
 
     # ------------------------------------------------------------- session 5
     S("cpp.templates", "cpp", "Function & class templates",
@@ -263,23 +278,13 @@ SKILLS = [
     S("cpp.variadic-templates", "cpp", "Parameter packs, folds & perfect forwarding",
       "You can take an arbitrary argument list with a parameter pack, collapse it with a fold expression, and forward each argument on without adding a copy.",
       5, [], 3,
-      [deck(5, "w5", "slides 9\u201310, 27"),
+      [deck(5, "w5", "slides 9\u201310, 18"),
        lab(5, 5, "step 3 \u2014 variadic template + fold expression"), hw(5), midterm("tpl")]),
     S("cpp.type-traits-constraints", "cpp", "Type traits, SFINAE, if constexpr & concepts",
       "You can ask a question about a type at compile time and use the answer to select or reject an overload \u2014 with enable_if, if constexpr, or a named C++20 concept.",
       5, [], 3,
       [deck(5, "w5", "slides 12\u201314"), deck(5, "w6", "slides 8\u20139"),
        lab(5, 5, "steps 4\u20135 \u2014 if constexpr and SFINAE"), hw(5), midterm("tpl")]),
-    S("cpp.virtual-dispatch", "cpp", "Inheritance, virtual functions & abstract interfaces",
-      "You can define an abstract interface with pure virtual functions and a virtual destructor, use override and final correctly, and spot the slicing and delete-through-a-non-virtual-base bugs.",
-      5, [], 3,
-      [deck(5, "w5", "slides 16\u201318, 24"),
-       lab(5, 6, "step 1 \u2014 the virtual version we replace"), midterm("oop"), final("core")], True),
-    S("perf.virtual-cost", "perf", "What a virtual call costs",
-      "You can describe the vptr/vtable indirection, explain that the real bill is the indirect branch and the inlining you lose, and say where a virtual still belongs in a trading system.",
-      5, [], 3,
-      [deck(5, "w5", "slides 19\u201323, 25"),
-       lab(5, 6, "step 2 \u2014 CRTP against the virtual baseline"), midterm("oop"), final("core")], True),
     S("cpp.constexpr", "cpp", "constexpr, consteval & static_assert",
       "You can compute a lookup table at compile time, check an assumption with static_assert so a violated invariant fails the build, and say what consteval forbids.",
       5, [], 3,
@@ -293,7 +298,7 @@ SKILLS = [
     S("cpp.variant-visit", "cpp", "std::variant + compile-time visitor dispatch",
       "You can mirror a tagged wire union as a std::variant and dispatch it with a visitor whose dead branches are discarded at compile time \u2014 no vtable, no allocation.",
       5, [], 3,
-      [deck(5, "w5", "slide 22"), deck(5, "w6", "slides 13\u201314"),
+      [deck(5, "w5", "slide 16"), deck(5, "w6", "slides 13\u201314"),
        lab(5, 6, "step 5 \u2014 variant + visitor dispatch"), hw(6), proj(1)]),
 
     # ------------------------------------------------------------- session 6
@@ -556,7 +561,7 @@ def build():
     return {
         "course": {
             "code": "IEOR E4741",
-            "title": "High-Frequency Trading Systems in C++",
+            "title": "High-Frequency Trading in C++",
             "institution": "Columbia University",
             "term": "Fall 2026",
             "sessions_url": "https://courseworks2.columbia.edu/courses/252758",

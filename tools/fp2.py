@@ -30,14 +30,6 @@ std::cout << sum(1, 2, 3, 4) << ' ' << sum(0.5, 0.25) << ' '
 std::cout << kind(3) << ' ' << kind(3.0) << ' ' << kind("x") << '\\n';
 // int float other""",
   "deck": "Deck W5 · slides 12–14 · Deck W6 · slide 9"},
- {"title": "What a virtual call actually costs",
-  "text": "A polymorphic object carries one hidden vptr to a per-class table of function addresses, so sizeof grows by eight the moment the first virtual appears. The call is two dependent loads plus an indirect branch — but the real bill is the inlining you lose and the branch mispredicts when a loop sees several targets. final or an exact known type lets the compiler devirtualise and inline through it.",
-  "code": """struct P { int a; };                              // plain
-struct V { int a; virtual ~V() = default; };      // polymorphic: hidden vptr
-std::cout << sizeof(P) << ' ' << sizeof(V) << ' ' << alignof(V) << ' '
-          << std::is_polymorphic_v<V> << '\\n';
-// 4 16 8 1     -- 8B vptr + 4B int + 4B padding""",
-  "deck": "Deck W5 · slides 17–20"},
  {"title": "constexpr: make the compiler do the work",
   "text": "A constexpr function can run during compilation when its inputs are constants; consteval must. Build a lookup table that way and the loop runs inside the compiler, the result ships as read-only data in the binary, and the hot path is one indexed load with no initialisation code and no branch. static_assert then checks the table before you ship it.",
   "code": """constexpr std::array<double, 8> make_ticks() {
@@ -61,12 +53,12 @@ struct Momentum : Strategy<Momentum> {
 Momentum m; m.on_book(100.01);
 std::printf("%zu\\n", sizeof(Momentum));           // no vptr at all
 // buy 100.01 1""",
-  "deck": "Deck W6 · slides 11–12"}
+  "deck": "Deck W5 · slide 16 · Deck W6 · slides 11–12"}
 ],
 "hft": {
  "text": "Why this matters in HFT",
  "paragraphs": [
-  "The choice between a template and a virtual is not a style question on the tick-to-trade path, it is the difference you get graded on. A virtual call is two loads plus an indirect branch the CPU can mispredict at 15–20 cycles, and it is an inlining barrier: constant folding and register allocation stop there. A template call compiles to the same machine code you would have written by hand for that exact type.",
+  "The choice between a template and a virtual is not a style question on the tick-to-trade path, it is the difference you get graded on. The virtual call you met in session 4 is two loads plus an indirect branch the CPU can mispredict at 15–20 cycles, and it is an inlining barrier: constant folding and register allocation stop there. A template call compiles to the same machine code you would have written by hand for that exact type.",
   "The deciding question is whether the type set is open or closed. Open — a plugin, or a base that must work with a bot it has never seen — is virtual's job, and the arena client uses it deliberately at exactly one place: hft_bot.hpp declares virtual void on_book(...) at the client boundary. Closed — the handful of message and strategy types you actually ship — means every run-time decision is one you chose not to make: template it, or mirror the wire union as a std::variant and dispatch with a compile-time visitor.",
   "That wire union is the concrete payoff. shared/messages.py is a pydantic discriminated union keyed on a \"type\" field — Handshake, PlaceOrder, OrderAck, BookSnapshot, CancelOrder — and a templated encode<T>/decode<T> plus std::visit over a variant gives you one allocation-free codec with no per-type copy-paste and no run-time branch. The parse boundary turns a tag into a type once; from there everything is static.",
   "constexpr moves work out of the tick entirely. Tick-size bands, fee tables and scaling factors are constants you can compute at build time and ship as read-only data, so the hot path does an indexed load instead of a computation. And static_assert is free insurance on the things that must not drift — struct sizes, alignments, tick grids — turning a wrong assumption into a failed build instead of a wrong quote.",
@@ -98,9 +90,9 @@ void stamp_and_send(SendFn&& send) {
  {"q": "What is the difference between if and if constexpr?",
   "a": "A plain if is a run-time test: both branches are compiled and the CPU evaluates the condition and may mispredict it. if constexpr is evaluated during compilation and the untaken branch is discarded before code generation — it is not even required to compile for that instantiation. So if constexpr costs nothing at run time and lets you write a branch that would be ill-formed for the other type.",
   "level": "warm-up", "skill": "cpp.type-traits-constraints"},
- {"q": "Precisely what does a virtual call cost, and when does it actually hurt?",
-  "a": "Mechanically: load the vptr out of the object, load the slot out of the vtable, then an indirect call — two dependent loads and a branch whose target is not known until the first load returns. On a loop with one hot target the predictor learns it and the marginal cost is a couple of nanoseconds; with several targets in the same loop you get mispredicts at roughly 15–20 cycles each. The larger cost is usually indirect: the compiler cannot inline through it, so constant folding stops at the call, and a fan-out of tiny virtuals scatters your instruction cache.",
-  "level": "core", "skill": "perf.virtual-cost"},
+ {"q": "What is a parameter pack, and what does a fold expression do with it?",
+  "a": "typename... Ts declares a pack — zero or more types — and Ts... xs the matching pack of arguments; sizeof...(Ts) is the count, known at compile time. A C++17 fold expression such as (xs + ...) collapses the pack over a binary operator in one line, with no recursion and no base case, and the expansion is unrolled and inlined at compile time. It is how one variadic function can serialise every field of a message with no run-time loop.",
+  "level": "warm-up", "skill": "cpp.variadic-templates"},
  {"q": "Compare CRTP with virtual dispatch. When would you still choose virtual?",
   "a": "CRTP binds the call at compile time — the base static_casts to its derived type — so it inlines completely, adds no vptr and no indirect branch, and an empty policy costs one byte. The catch is that the concrete type must be known at compile time, so it cannot express a set of types decided at run time. I still use virtual where the type set is genuinely open or where flexibility is worth more than nanoseconds: configuration, setup, logging, and the client boundary — never in the tick-to-trade body.",
   "level": "core", "skill": "cpp.crtp-policies"},

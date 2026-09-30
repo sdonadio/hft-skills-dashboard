@@ -138,7 +138,7 @@ window.SKILLS = {
     {
       "n": 4,
       "date": "2026-09-30",
-      "title": "Custom Allocators & Memory Pools",
+      "title": "Custom Allocators & Memory Pools + Runtime Polymorphism",
       "decks": [
         "w4"
       ],
@@ -147,7 +147,7 @@ window.SKILLS = {
         "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week04.md"
       },
       "hw": {
-        "label": "HW 4 — A high-performance allocator (Memory Triathlon)",
+        "label": "HW 4 — A high-performance allocator + runtime polymorphism",
         "url": "https://courseworks2.columbia.edu/courses/252758/assignments/1714428",
         "due": "2026-10-10"
       },
@@ -163,6 +163,8 @@ window.SKILLS = {
         "cpp.placement-new",
         "perf.arena-allocator",
         "cpp.pmr",
+        "cpp.virtual-dispatch",
+        "perf.virtual-cost",
         "tools.replay-harness",
         "tools.benchmarking",
         "perf.heap-nondeterminism"
@@ -196,12 +198,11 @@ window.SKILLS = {
         "cpp.templates",
         "cpp.variadic-templates",
         "cpp.type-traits-constraints",
-        "cpp.virtual-dispatch",
-        "perf.virtual-cost",
         "cpp.constexpr",
         "cpp.crtp-policies",
         "cpp.variant-visit",
-        "cpp.classes-invariants"
+        "cpp.virtual-dispatch",
+        "perf.virtual-cost"
       ]
     },
     {
@@ -1075,20 +1076,13 @@ window.SKILLS = {
       "name": "Classes, constructors & destructors",
       "can": "You can establish a class invariant in the member-initialiser list, mark a converting constructor explicit, and predict construction and destruction order.",
       "introduced": 3,
-      "practised": [
-        5
-      ],
+      "practised": [],
       "depth": 3,
       "where": [
         {
           "type": "deck",
           "session": 3,
           "label": "Deck W3 · slides 9–11, 18"
-        },
-        {
-          "type": "deck",
-          "session": 5,
-          "label": "Deck W5 · slides 16, 24"
         },
         {
           "type": "hw",
@@ -1313,7 +1307,7 @@ window.SKILLS = {
         {
           "type": "deck",
           "session": 4,
-          "label": "Deck W4 · slides 8, 10, 15"
+          "label": "Deck W4 · slides 8, 10, 26"
         },
         {
           "type": "deck",
@@ -1328,7 +1322,7 @@ window.SKILLS = {
         },
         {
           "type": "hw",
-          "label": "HW 4 — A high-performance allocator (Memory Triathlon)",
+          "label": "HW 4 — A high-performance allocator + runtime polymorphism",
           "url": "https://courseworks2.columbia.edu/courses/252758/assignments/1714428"
         },
         {
@@ -1365,7 +1359,7 @@ window.SKILLS = {
         },
         {
           "type": "hw",
-          "label": "HW 4 — A high-performance allocator (Memory Triathlon)",
+          "label": "HW 4 — A high-performance allocator + runtime polymorphism",
           "url": "https://courseworks2.columbia.edu/courses/252758/assignments/1714428"
         },
         {
@@ -1387,11 +1381,11 @@ window.SKILLS = {
         {
           "type": "deck",
           "session": 4,
-          "label": "Deck W4 · slides 9, 13, 15"
+          "label": "Deck W4 · slides 9, 13, 26"
         },
         {
           "type": "hw",
-          "label": "HW 4 — A high-performance allocator (Memory Triathlon)",
+          "label": "HW 4 — A high-performance allocator + runtime polymorphism",
           "url": "https://courseworks2.columbia.edu/courses/252758/assignments/1714428"
         },
         {
@@ -1418,15 +1412,103 @@ window.SKILLS = {
         {
           "type": "deck",
           "session": 4,
-          "label": "Deck W4 · slides 12–13, 15"
+          "label": "Deck W4 · slides 12–13, 26"
         },
         {
           "type": "hw",
-          "label": "HW 4 — A high-performance allocator (Memory Triathlon)",
+          "label": "HW 4 — A high-performance allocator + runtime polymorphism",
           "url": "https://courseworks2.columbia.edu/courses/252758/assignments/1714428"
         }
       ],
       "interview": false
+    },
+    {
+      "id": "cpp.virtual-dispatch",
+      "category": "cpp",
+      "name": "Inheritance, virtual functions & abstract interfaces",
+      "can": "You can define an abstract interface with pure virtual functions and a virtual destructor, use override and final correctly, and spot the slicing and delete-through-a-non-virtual-base bugs.",
+      "introduced": 4,
+      "practised": [
+        5
+      ],
+      "depth": 3,
+      "where": [
+        {
+          "type": "deck",
+          "session": 4,
+          "label": "Deck W4 · slides 15–18, 23–24"
+        },
+        {
+          "type": "lab",
+          "session": 4,
+          "label": "Lab week 4 · steps 7–8 — abstract Strategy, objects in your pool destroyed through the base pointer",
+          "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week04.md"
+        },
+        {
+          "type": "lab",
+          "session": 5,
+          "label": "Lab week 6 · step 1 — the virtual version we replace",
+          "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week06.md"
+        },
+        {
+          "type": "hw",
+          "label": "HW 4 — A high-performance allocator + runtime polymorphism",
+          "url": "https://courseworks2.columbia.edu/courses/252758/assignments/1714428"
+        },
+        {
+          "type": "exam",
+          "label": "Midterm · group: OOP, Virtual Dispatch & Object Model"
+        },
+        {
+          "type": "exam",
+          "label": "Final · group: Core C++: Memory, RAII & Object Model"
+        }
+      ],
+      "interview": true
+    },
+    {
+      "id": "perf.virtual-cost",
+      "category": "perf",
+      "name": "What a virtual call costs",
+      "can": "You can describe the vptr/vtable indirection, explain that the real bill is the indirect branch and the inlining you lose, and say where a virtual still belongs in a trading system.",
+      "introduced": 4,
+      "practised": [
+        5
+      ],
+      "depth": 3,
+      "where": [
+        {
+          "type": "deck",
+          "session": 4,
+          "label": "Deck W4 · slides 19–22"
+        },
+        {
+          "type": "lab",
+          "session": 4,
+          "label": "Lab week 4 · steps 9–10 — what virtual costs (bench), final & devirtualization",
+          "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week04.md"
+        },
+        {
+          "type": "lab",
+          "session": 5,
+          "label": "Lab week 6 · step 2 — CRTP against the virtual baseline",
+          "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week06.md"
+        },
+        {
+          "type": "hw",
+          "label": "HW 4 — A high-performance allocator + runtime polymorphism",
+          "url": "https://courseworks2.columbia.edu/courses/252758/assignments/1714428"
+        },
+        {
+          "type": "exam",
+          "label": "Midterm · group: OOP, Virtual Dispatch & Object Model"
+        },
+        {
+          "type": "exam",
+          "label": "Final · group: Core C++: Memory, RAII & Object Model"
+        }
+      ],
+      "interview": true
     },
     {
       "id": "cpp.templates",
@@ -1476,7 +1558,7 @@ window.SKILLS = {
         {
           "type": "deck",
           "session": 5,
-          "label": "Deck W5 · slides 9–10, 27"
+          "label": "Deck W5 · slides 9–10, 18"
         },
         {
           "type": "lab",
@@ -1532,68 +1614,6 @@ window.SKILLS = {
         }
       ],
       "interview": false
-    },
-    {
-      "id": "cpp.virtual-dispatch",
-      "category": "cpp",
-      "name": "Inheritance, virtual functions & abstract interfaces",
-      "can": "You can define an abstract interface with pure virtual functions and a virtual destructor, use override and final correctly, and spot the slicing and delete-through-a-non-virtual-base bugs.",
-      "introduced": 5,
-      "practised": [],
-      "depth": 3,
-      "where": [
-        {
-          "type": "deck",
-          "session": 5,
-          "label": "Deck W5 · slides 16–18, 24"
-        },
-        {
-          "type": "lab",
-          "session": 5,
-          "label": "Lab week 6 · step 1 — the virtual version we replace",
-          "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week06.md"
-        },
-        {
-          "type": "exam",
-          "label": "Midterm · group: OOP, Virtual Dispatch & Object Model"
-        },
-        {
-          "type": "exam",
-          "label": "Final · group: Core C++: Memory, RAII & Object Model"
-        }
-      ],
-      "interview": true
-    },
-    {
-      "id": "perf.virtual-cost",
-      "category": "perf",
-      "name": "What a virtual call costs",
-      "can": "You can describe the vptr/vtable indirection, explain that the real bill is the indirect branch and the inlining you lose, and say where a virtual still belongs in a trading system.",
-      "introduced": 5,
-      "practised": [],
-      "depth": 3,
-      "where": [
-        {
-          "type": "deck",
-          "session": 5,
-          "label": "Deck W5 · slides 19–23, 25"
-        },
-        {
-          "type": "lab",
-          "session": 5,
-          "label": "Lab week 6 · step 2 — CRTP against the virtual baseline",
-          "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week06.md"
-        },
-        {
-          "type": "exam",
-          "label": "Midterm · group: OOP, Virtual Dispatch & Object Model"
-        },
-        {
-          "type": "exam",
-          "label": "Final · group: Core C++: Memory, RAII & Object Model"
-        }
-      ],
-      "interview": true
     },
     {
       "id": "cpp.constexpr",
@@ -1675,7 +1695,7 @@ window.SKILLS = {
         {
           "type": "deck",
           "session": 5,
-          "label": "Deck W5 · slide 22"
+          "label": "Deck W5 · slide 16"
         },
         {
           "type": "deck",

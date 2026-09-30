@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="icon" href="data:," />
+<title>Progress · IEOR E4741 High-Frequency Trading in C++</title>
+<meta name="description" content="Where the class is: sessions done, what was built, deliverables, and the project track for IEOR E4741 High-Frequency Trading in C++, Fall 2026." />
+<link rel="stylesheet" href="styles.css" />
+<style>
+/* ── page-scoped styles: progress dashboard (reuses the site variables) ─────── */
+body[data-page="progress"]{font-size:16px}
+@media (min-width:1500px){body[data-page="progress"]{font-size:18px}
+  body[data-page="progress"] section{max-width:1440px}}
+html[data-theme="light"]{color-scheme:light;
+  --bg:#f5f6f8;--panel:#ffffff;--panel2:#eceff4;--panel-2:#f0f2f6;--code-bg:#eef1f6;--code-head:#e4e8ef;
+  --code-ink:#1b2430;--ink:#171a20;--ink-dim:#30353e;--muted:#4c535e;--dim:#66707d;--line:#d5dae2;
+  --line-2:#c1c8d3;--ok:#1a7f37;--warn:#8a5a00;--bad:#c62828;--info:#0b5cad;
+  --accent:#1f5fa8;--accent-2:#144d8c;--accent-3:#0b3d6e;--accent-rgb:31,95,168;--accent-2-rgb:20,77,140}
+html[data-theme="light"] strong{color:#000}
+html[data-theme="light"] nav.top{background:rgba(245,246,248,.94)}
+html[data-theme="light"] .bar{background:#dde2ea}
+html[data-theme="light"] .btn.primary{color:#fff}
+html[data-theme="light"] .pill.ok{color:#1a7f37;background:rgba(26,127,55,.1)}
+html[data-theme="light"] .pill.warn{color:#8a5a00;background:rgba(138,90,0,.1)}
+html[data-theme="light"] .pill.bad{color:#c62828}
+html[data-theme="light"] code{color:#0b3d6e}
+html[data-theme="dark"]{color-scheme:dark}
+
+.pg-top{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.tbtn{font-size:12px;padding:5px 12px}
+section.pg h2{font-size:clamp(22px,2.3vw,30px);letter-spacing:-.5px}
+section.pg .lead{font-size:1em}
+.hero-h{font-size:clamp(30px,5vw,60px);font-weight:800;letter-spacing:-1.4px;line-height:1.05;margin:8px 0 6px}
+.hero-h em{font-style:normal;color:var(--accent-2)}
+.hero-sub{font-size:1.15em;color:var(--muted);max-width:none;margin:6px 0 0}
+.hero-sub b{color:var(--ink)}
+
+/* segmented session bar */
+.seg{display:grid;grid-template-columns:repeat(13,1fr);gap:5px;margin:26px 0 8px}
+.seg a{display:flex;align-items:center;justify-content:center;height:34px;border-radius:7px;
+  font:700 .8em var(--mono);border:1px solid var(--line-2);color:var(--dim);background:transparent;text-decoration:none}
+.seg a.done{background:var(--accent);border-color:transparent;color:#fff}
+html[data-theme="light"] .seg a.done{color:#fff;background:var(--accent)}
+.seg a.cur{border:2px solid var(--warn);color:var(--ink);background:rgba(210,153,34,.16);animation:pulse 2.2s ease-in-out infinite}
+.seg a:hover{border-color:var(--accent-2);text-decoration:none}
+.seg-cap{display:flex;justify-content:space-between;font:600 .78em var(--mono);color:var(--muted)}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(210,153,34,.55)}50%{box-shadow:0 0 0 8px rgba(210,153,34,0)}}
+
+/* stat tiles */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-top:22px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;min-width:0}
+.tile .tl1{font-size:.7em;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;color:var(--dim)}
+.tile .tv{font-size:2.3em;font-weight:800;letter-spacing:-1px;line-height:1.1;margin-top:4px;color:var(--ink);font-variant-numeric:tabular-nums}
+.tile .tv small{font-size:.42em;font-weight:700;color:var(--muted);letter-spacing:0;margin-left:4px}
+.tile .ts{font-size:.8em;color:var(--muted);margin-top:2px}
+.tile.hot{border-color:var(--warn)}
+
+/* journey timeline */
+.jr{list-style:none;display:grid;grid-template-columns:repeat(13,minmax(0,1fr));margin:26px 0 8px;position:relative}
+.jr li{position:relative;display:flex;justify-content:center;min-width:0}
+.jr li::before{content:"";position:absolute;top:24px;left:-50%;width:100%;height:3px;background:var(--line-2)}
+.jr li:first-child::before{display:none}
+.jr li.done::before,.jr li.cur::before{background:var(--accent)}
+.node{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:5px;background:none;border:0;
+  cursor:pointer;color:var(--ink);font-family:inherit;padding:0 2px;width:100%;min-width:0}
+.node .dot{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font:800 1.05em var(--mono);border:3px solid var(--line-2);background:var(--bg);color:var(--dim);transition:.15s}
+.node.done .dot{background:var(--accent);border-color:var(--accent);color:#fff}
+.node.cur .dot{background:var(--bg);border-color:var(--warn);color:var(--ink);animation:pulse 2.2s ease-in-out infinite}
+.node.sel .dot{outline:3px solid var(--accent-2);outline-offset:3px}
+.node:hover .dot{border-color:var(--accent-2)}
+.node .nl{font-size:.72em;font-weight:700;text-align:center;line-height:1.2;color:var(--ink-dim);overflow-wrap:anywhere}
+.node .nd{font:600 .68em var(--mono);color:var(--dim)}
+.node .tag{font-size:.6em;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--warn)}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:.8em;color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid var(--line-2);margin-right:6px;vertical-align:-1px}
+.legend i.d{background:var(--accent);border-color:var(--accent)}
+.legend i.c{border-color:var(--warn)}
+
+.detail{margin-top:18px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px 24px}
+.detail .dh{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap}
+.detail .dn{font:800 .85em var(--mono);color:var(--accent-2);letter-spacing:1px;text-transform:uppercase}
+.detail h3.big{font-size:clamp(20px,2.4vw,30px);letter-spacing:-.6px;text-transform:none;color:var(--ink);margin:4px 0 4px;line-height:1.2}
+.detail .dgrid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:26px;margin-top:16px}
+.detail ul.ideas{list-style:none;display:grid;gap:9px}
+.detail ul.ideas li{position:relative;padding-left:22px;color:var(--ink-dim)}
+.detail ul.ideas li::before{content:"";position:absolute;left:2px;top:.62em;width:9px;height:9px;border-radius:2px;background:var(--accent)}
+.nums{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.num{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}
+.num b{display:block;font:800 1.5em var(--mono);color:var(--accent-2);letter-spacing:-.5px;line-height:1.15;overflow-wrap:anywhere}
+.num span{display:block;font-size:.78em;color:var(--muted);margin-top:3px;line-height:1.35}
+.dblock{margin-top:16px}
+.dblock:first-child{margin-top:0}
+.dlinks{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.dlinks a{font-size:.85em;font-weight:700;border:1px solid var(--line-2);border-radius:9px;padding:8px 14px;background:var(--panel2);color:var(--accent-2)}
+.dlinks a:hover{border-color:var(--accent-2);text-decoration:none}
+
+/* stack */
+.stackv{display:flex;flex-direction:column-reverse;gap:8px;margin-top:20px}
+.layer{display:grid;grid-template-columns:110px minmax(0,1fr) minmax(0,1.3fr);gap:6px 18px;align-items:center;
+  border:1px solid var(--line);border-radius:12px;padding:12px 16px;background:var(--panel);position:relative}
+.layer .ls{font:800 .8em var(--mono);color:var(--dim)}
+.layer .lt{font-weight:800;font-size:1.05em;letter-spacing:-.2px}
+.layer .lf{font-size:.86em;color:var(--muted)}
+.layer.built{border-color:rgba(var(--accent-rgb),.7);background:linear-gradient(90deg,rgba(var(--accent-rgb),.22),var(--panel))}
+.layer.built .ls{color:var(--accent-2)}
+.layer.now{border:2px solid var(--warn);background:rgba(210,153,34,.1)}
+.layer.now .ls{color:var(--warn)}
+.layer.ahead{opacity:.62;border-style:dashed}
+.hotcap{background:var(--accent-deep);color:#fff;border-radius:12px;padding:12px 16px;font-weight:700;
+  display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+html[data-theme="light"] .hotcap{background:#0b3d6e}
+.hotcap code{background:rgba(255,255,255,.16);color:#fff}
+.hotcap span.fl{font-family:var(--mono);font-size:.85em;font-weight:600;opacity:.92}
+
+/* skills */
+.cats{display:grid;gap:14px;margin-top:6px}
+.cat .ch{display:flex;justify-content:space-between;gap:12px;font-weight:700;font-size:.95em;flex-wrap:wrap}
+.cat .ch span{font:600 .85em var(--mono);color:var(--muted)}
+.cbar{position:relative;height:14px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);overflow:hidden;margin-top:5px}
+.cbar i{position:absolute;left:0;top:0;bottom:0;border-radius:0}
+.cbar i.tick{background:rgba(63,185,80,.85);z-index:2}
+.cbar i.cov{background:var(--catc,var(--accent));opacity:.9;z-index:1}
+.cbar i.new{background:repeating-linear-gradient(45deg,var(--warn),var(--warn) 4px,transparent 4px,transparent 8px);z-index:0;opacity:.85}
+.sk2{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:26px;margin-top:16px;align-items:start}
+.chk{display:grid;gap:9px}
+.chk a{display:flex;justify-content:space-between;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);
+  border-radius:11px;padding:10px 14px;color:var(--ink);font-weight:650;text-decoration:none}
+.chk a:hover{border-color:var(--accent-2)}
+.chk a small{font:600 .8em var(--mono);color:var(--muted);white-space:nowrap}
+.mine{margin-top:12px}
+.mine .big{font:800 2em var(--mono);color:var(--ok)}
+
+/* deliverables */
+.dl{list-style:none;display:grid;gap:8px;margin-top:20px}
+.dl li{display:grid;grid-template-columns:118px minmax(0,1fr) auto;gap:6px 16px;align-items:center;border:1px solid var(--line);
+  border-radius:12px;padding:11px 16px;background:var(--panel)}
+.dl li .dd{font:800 .9em var(--mono);color:var(--ink)}
+.dl li .dd small{display:block;font-weight:600;font-size:.78em;color:var(--dim)}
+.dl li .dt{font-weight:700;min-width:0}
+.dl li .dt small{display:block;font-weight:500;color:var(--muted);font-size:.8em}
+.dl li.closed{opacity:.6}
+.dl li.closed .dt{text-decoration:line-through;text-decoration-color:var(--dim)}
+.dl li.soon{border-color:var(--warn);background:rgba(210,153,34,.09)}
+.dl li.next{outline:2px solid var(--accent-2);outline-offset:1px}
+
+/* project */
+.ph{list-style:none;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:20px}
+.ph li{border:1px solid var(--line);border-radius:14px;padding:14px 15px;background:var(--panel);min-width:0}
+.ph li .pn2{font:800 .8em var(--mono);color:var(--dim);letter-spacing:1px;text-transform:uppercase}
+.ph li b{display:block;font-size:1.02em;margin:4px 0 6px;line-height:1.25}
+.ph li p{font-size:.82em;color:var(--muted);margin:0;line-height:1.45}
+.ph li.done{border-color:rgba(63,185,80,.6);background:rgba(63,185,80,.08)}
+.ph li.done .pn2{color:var(--ok)}
+.ph li.nxt{border:2px solid var(--warn);background:rgba(210,153,34,.1)}
+.ph li.nxt .pn2{color:var(--warn)}
+.ph li .due{display:block;font:700 .78em var(--mono);color:var(--ink);margin-top:8px}
+.p1{margin-top:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+
+/* tonight / next week */
+.two{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:18px;margin-top:20px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px 22px}
+.card.tonight{border:2px solid var(--warn);background:linear-gradient(180deg,rgba(210,153,34,.1),var(--panel) 60%)}
+.card h3.big{font-size:1.5em;text-transform:none;letter-spacing:-.4px;color:var(--ink);margin:3px 0 8px;line-height:1.2}
+.agenda{list-style:none;counter-reset:ag;display:grid;gap:11px;margin-top:10px}
+.agenda li{counter-increment:ag;position:relative;padding-left:44px;min-height:32px}
+.agenda li::before{content:counter(ag);position:absolute;left:0;top:0;width:30px;height:30px;border-radius:50%;
+  background:var(--accent);color:#fff;font:800 .85em var(--mono);display:flex;align-items:center;justify-content:center}
+.agenda li b{display:block}
+.agenda li span{color:var(--muted);font-size:.86em;display:block}
+.agenda li.lab::before{background:var(--warn);color:#000}
+
+.nojs{padding:20px;color:var(--warn)}
+.foot2{margin:0 auto;max-width:1180px;padding:0 22px 8px;color:var(--dim);font-size:.75em}
+@media (max-width:1100px){
+  .ph{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .detail .dgrid,.sk2,.two{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:900px){
+  .jr{grid-template-columns:repeat(auto-fill,minmax(64px,1fr));row-gap:16px}
+  .jr li::before{display:none}
+  .layer{grid-template-columns:minmax(0,1fr)}
+  .seg{grid-template-columns:repeat(13,1fr);gap:3px}
+  .seg a{height:28px;font-size:.62em;border-radius:5px}
+}
+@media (max-width:720px){
+  .dl li{grid-template-columns:minmax(0,1fr) auto}
+  .dl li .dd{grid-column:1 / span 2}
+  .ph{grid-template-columns:minmax(0,1fr)}
+  .detail{padding:16px 14px}
+  .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .tile .tv{font-size:1.8em}
+}
+@media print{.tbtn{display:none}}
+</style>
+</head>
+<body data-page="progress">
+
+<nav class="top" id="nav" aria-label="Site">
+  <a href="index.html">IEOR E4741 Skills</a>
+  <span class="crumbs"><b>Progress</b></span>
+  <span class="spacer"></span>
+  <button class="btn tbtn" type="button" id="themeBtn" aria-label="Toggle light or dark theme">Theme</button>
+</nav>
+
+<main id="app">
+  <noscript><p class="nojs">This dashboard needs JavaScript (no build, no external libraries).</p></noscript>
+
+  <!-- 1 · HERO -->
+  <section id="hero" class="pg" aria-labelledby="heroH">
+    <div class="kicker">IEOR E4741 · High-Frequency Trading in C++ · Fall 2026 · Wednesdays 7:10&ndash;10:10 pm ET</div>
+    <h1 class="hero-h" id="heroH">Where we are</h1>
+    <p class="hero-sub" id="heroSub">&nbsp;</p>
+    <div class="seg" id="seg" role="list" aria-label="Sessions 1 to 13"></div>
+    <div class="seg-cap"><span id="segL"></span><span id="segR"></span></div>
+    <div class="tiles" id="tiles"></div>
+  </section>
+
+  <!-- 2 · JOURNEY -->
+  <section id="journey" class="pg" aria-labelledby="jH">
+    <div class="kicker">The journey</div>
+    <h2 id="jH">Thirteen sessions, one trading bot</h2>
+    <p class="lead">Click any session. Finished ones open a recap: the key ideas, the numbers we measured, what you built in the lab, and the homework.</p>
+    <ol class="jr" id="jr"></ol>
+    <div class="legend"><span><i class="d"></i>done</span><span><i class="c"></i>current</span><span><i></i>upcoming</span></div>
+    <div class="detail" id="detail" aria-live="polite"></div>
+  </section>
+
+  <!-- 3 · STACK -->
+  <section id="stack" class="pg" aria-labelledby="sH">
+    <div class="kicker">The stack you have built so far</div>
+    <h2 id="sH">Every session feeds the hot path</h2>
+    <p class="lead">The bot's job is tick-to-trade: a book arrives, <code>on_book</code> decides, an order leaves. Each layer below removes latency or variance from that path. Built layers are filled; the layer in progress is outlined.</p>
+    <div class="stackv" id="stackv"></div>
+  </section>
+
+  <!-- 4 · SKILLS -->
+  <section id="skills" class="pg" aria-labelledby="kH">
+    <div class="kicker">Skills coverage</div>
+    <h2 id="kH">What has been covered</h2>
+    <p class="lead" id="skLead"></p>
+    <div class="sk2">
+      <div>
+        <div class="cats" id="cats"></div>
+        <div class="legend"><span><i style="background:var(--accent);border-color:var(--accent)"></i>covered so far</span>
+          <span><i style="background:var(--warn);border-color:var(--warn)"></i>added by the current session</span>
+          <span><i style="background:var(--ok);border-color:var(--ok)"></i>ticked in your checklist</span></div>
+      </div>
+      <div>
+        <h3>Checklists, session by session</h3>
+        <div class="chk" id="chk"></div>
+        <div class="panel mine" id="mine"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 · DELIVERABLES -->
+  <section id="deliverables" class="pg" aria-labelledby="dH">
+    <div class="kicker">Deliverables</div>
+    <h2 id="dH">What was due, what is coming</h2>
+    <p class="lead">Due dates are Eastern Time, 11:59 pm unless noted. Status is computed from today&rsquo;s date; the Canvas assignment page is the authority.</p>
+    <ol class="dl" id="dl"></ol>
+  </section>
+
+  <!-- 6 · PROJECT -->
+  <section id="project" class="pg" aria-labelledby="pH">
+    <div class="kicker">Project track</div>
+    <h2 id="pH">One C++ bot, eight phases, one live exchange</h2>
+    <p class="lead">You grow a single trading bot on the Low-Latency Trading Arena. Each phase is measured by the arena&rsquo;s own instrumentation.</p>
+    <ol class="ph" id="ph"></ol>
+    <div class="p1" id="p1"></div>
+  </section>
+
+  <!-- 7 · TONIGHT / NEXT -->
+  <section id="tonight" class="pg" aria-labelledby="tH">
+    <div class="kicker" id="tK">Tonight</div>
+    <h2 id="tH">Agenda</h2>
+    <div class="two" id="two"></div>
+  </section>
+</main>
+
+<div class="foot2" id="foot2"></div>
+<footer id="foot">IEOR E4741 · High-Frequency Trading in C++ · Columbia University · Fall 2026 · skills dashboard. Your checklist is read from this browser only and never written by this page.</footer>
+
+<script src="skills.js"></script>
+<script src="focus.js"></script>
+<script src="progress.js"></script>
+</body>
+</html>

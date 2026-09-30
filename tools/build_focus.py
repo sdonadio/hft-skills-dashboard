@@ -8,6 +8,6 @@ assert [s["n"] for s in sessions] == list(range(1, 14)), [s["n"] for s in sessio
 
 body = json.dumps({"sessions": sessions}, indent=2, ensure_ascii=False)
 out = "window.FOCUS = " + body + ";\n"
-path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "focus.js")
+path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "focus.js")
 io.open(path, "w", encoding="utf-8").write(out)
 print("wrote", path, os.path.getsize(path), "bytes")

@@ -14,7 +14,7 @@ LEVELS = {"warm-up", "core", "senior"}
 # names a full verified program in snips/ whose distinctive lines must appear
 # verbatim in the displayed snippet; it is compiled and run instead of the
 # fragment, because the fragment shows only one half of the class.
-FILE_SCOPE = {"v_s5_c2": 2, "v_s5_c3": 5, "v_s5_c5": 7, "v_s5_c6": 6,
+FILE_SCOPE = {"v_s4_c5": 6, "v_s5_c2": 2, "v_s5_c3": 5, "v_s5_c4": 7, "v_s5_c5": 6,
               "v_s7_c4": 6}
 COMPANION  = {"v_s9_c3": ("s09b.cpp",
                           ["head_.store(h + 1, std::memory_order_release);",

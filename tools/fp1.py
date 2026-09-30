@@ -320,15 +320,12 @@ private:
 # ===================== SESSION 4 =====================
 S.append({
 "n": 4,
-"focus": "Custom allocators & memory pools",
-"tagline": "“Don't allocate” is not enough — sooner or later you need a fresh object per tick, so make the allocation itself O(1) and deterministic.",
+"focus": "Custom allocators, memory pools & runtime polymorphism",
+"tagline": "“Don't allocate” is not enough — make the allocation itself O(1) and deterministic, then put polymorphic objects in it and know exactly what a virtual call costs.",
 "concepts": [
- {"title": "What new and malloc really cost",
-  "text": "The default allocator is a general-purpose, thread-safe service, and every one of those properties is wrong for a microsecond path. It guards its free lists with a lock, it calls brk or mmap into the kernel when it runs out, variable-size requests fragment it over a session, and so the same call is 20 ns on one tick and 20 µs on the next. That variance is the whole problem.",
-  "deck": "Deck W4 · slide 5"},
- {"title": "What the hot path actually needs",
-  "text": "Flip every property of the general-purpose allocator and you get the specification: no locks, because there is one pool per thread; no syscalls, because the memory is reserved before the session opens; O(1) always, because allocation is a pointer bump or a free-list pop with no search and no coalescing; and bounded, because you sized it at startup for the worst tick. Same cost every time is what collapses the tail toward the median.",
-  "deck": "Deck W4 \u00b7 slide 6"},
+ {"title": "What new and malloc cost — and what the hot path needs",
+  "text": "The default allocator is a general-purpose, thread-safe service, and every one of those properties is wrong for a microsecond path. It guards its free lists with a lock, it calls brk or mmap into the kernel when it runs out, variable-size requests fragment it over a session, and so the same call is 20 ns on one tick and 20 µs on the next. Flip each property and you have the specification: no locks (one pool per thread), no syscalls (memory reserved before the session opens), O(1) always (a pointer bump or a free-list pop), and bounded (sized at startup for the worst tick). Same cost every time is what collapses the tail toward the median.",
+  "deck": "Deck W4 · slides 5–6"},
  {"title": "The fixed-size object pool",
   "text": "Give up flexibility and buy determinism: one block size, one pre-owned slab, and a free list threaded through the unused slots so the free slots *are* the list and cost no extra memory. Allocation pops the head, deallocation pushes it back, both O(1) with no search and no coalescing — and because slots get reused in cycles they stay hot in L1.",
   "code": """struct Node { Node* next; };
@@ -355,11 +352,8 @@ o->~Order();                                   // YOU destroy it
 std::puts("");
 // ctor 101.5 200 dtor""",
   "deck": "Deck W4 · slide 9"},
- {"title": "The arena / bump allocator: per-tick scratch",
-  "text": "When a group of objects shares a lifetime, stop freeing them one at a time. Keep a single offset into a slab, return it and advance by the aligned size, and reclaim everything at once with one reset. You cannot free an individual object — which is exactly right for a tick's working set: allocate freely inside the tick, reset at the end, no leaks and no fragmentation.",
-  "deck": "Deck W4 · slide 9"},
- {"title": "std::pmr: the standard version of all this",
-  "text": "C++17 standardises the pattern. A memory_resource is an abstract source of bytes; monotonic_buffer_resource is a bump allocator over a buffer you supply; unsynchronized_pool_resource is a lock-free pooled resource; and a polymorphic_allocator lets std::pmr::vector and friends take a resource pointer at construction. Same container type, your memory underneath.",
+ {"title": "Arena / bump allocation and std::pmr",
+  "text": "When a group of objects shares a lifetime, stop freeing them one at a time: keep a single offset into a slab, return it and advance by the aligned size, and reclaim everything with one reset. You cannot free an individual object — which is exactly right for a tick's working set. C++17 standardises the pattern: a memory_resource is an abstract source of bytes, monotonic_buffer_resource is the bump allocator over a buffer you supply, and a polymorphic_allocator lets std::pmr::vector and friends take a resource at construction. Same container type, your memory underneath.",
   "code": """std::byte buf[1024];                                   // stack scratch slab
 std::pmr::monotonic_buffer_resource rsrc{buf, sizeof buf};
 std::pmr::vector<int> v{&rsrc};                        // std container, YOUR memory
@@ -368,16 +362,39 @@ auto* d = reinterpret_cast<const std::byte*>(v.data());
 std::cout << v.size() << ' ' << (d >= buf && d < buf + sizeof buf) << '\\n';
 rsrc.release();                                        // O(1) reset, per tick
 // 2 1     -- the vector's storage really is inside buf; the heap is untouched""",
-  "deck": "Deck W4 · slides 12–13"}
+  "deck": "Deck W4 · slide 9 · Deck W4 · slides 12–13"},
+ {"title": "Pooled polymorphic objects: placement new a Derived, destroy through Base*",
+  "text": "Inheritance is an is-a claim: a Tight quoter is usable wherever a Quoter is, and a pure virtual base is the abstract interface the hot path codes against. A pool slot is just bytes, so you placement-new the Derived into it and hold a Base*; when you hand the slot back you destroy through that Base*, and only a virtual destructor makes the Derived destructor run first. Drop the virtual and it is undefined behaviour — in practice the Derived members are never destroyed — and copying a Derived into a Base by value slices it, so pooled polymorphic objects are always held by pointer.",
+  "code": """struct Quoter {
+  virtual ~Quoter() { std::printf("~Quoter "); }
+  virtual double px(double m) const = 0; };          // abstract interface
+struct Tight : Quoter {
+  ~Tight() override { std::printf("~Tight "); }
+  double px(double m) const override { return m - 0.01; } };
+alignas(Tight) char slot[sizeof(Tight)];             // one pool slot: raw bytes
+Quoter* q = new (slot) Tight;                        // construct a Derived in it
+std::printf("%.2f ", q->px(100.0));                  // dispatch through the Base*
+q->~Quoter();                                        // virtual dtor: ~Tight, then ~Quoter
+std::puts("");
+// 99.99 ~Tight ~Quoter""",
+  "deck": "Deck W4 · slide 18"},
+ {"title": "What a virtual call actually costs",
+  "text": "A polymorphic object carries one hidden vptr to a per-class table of function addresses, so sizeof grows by eight the moment the first virtual appears. The call is two dependent loads plus an indirect branch — but the real bill is the inlining you lose and the branch mispredicts when a loop sees several targets. final or an exact known type lets the compiler devirtualise and inline through it; and when the type set is closed, session 5's templates, CRTP and std::variant remove the indirection altogether.",
+  "code": """struct P { int a; };                              // plain
+struct V { int a; virtual ~V() = default; };      // polymorphic: hidden vptr
+std::cout << sizeof(P) << ' ' << sizeof(V) << ' ' << alignof(V) << ' '
+          << std::is_polymorphic_v<V> << '\\n';
+// 4 16 8 1     -- 8B vptr + 4B int + 4B padding""",
+  "deck": "Deck W4 · slides 19–22"}
 ],
 "hft": {
  "text": "Why this matters in HFT",
  "paragraphs": [
-  "Session 3 gave you the rule — do not allocate on the hot path — and this session gives you the machinery to obey it at full speed. The targets are concrete: anywhere on_book or on_fill creates an order, a message or a book node is a hidden new. Pre-size a pool per struct type at startup, put the per-tick working set on a monotonic buffer, and the p99.9 in the harness histogram drops against your session-2 baseline. That drop is the entire point.",
-  "The properties you are buying are the mirror image of malloc's: no lock because the pool is per-thread, no syscall because the memory is reserved before SESSION_OPEN, O(1) because allocation is a pointer bump or a free-list pop, and bounded because you sized the slab for the worst tick. Same cost every time means the tail collapses toward the median.",
+  "Session 3 gave you the rule — do not allocate on the hot path — and this session gives you the machinery to obey it at full speed. The targets are concrete: anywhere on_book or on_fill creates an order, a message or a book node is a hidden new. Pre-size a pool per struct type at startup, put the per-tick working set on a monotonic buffer, and the p99.9 in the harness histogram drops against your session-2 baseline. The properties you are buying are the mirror image of malloc's: no lock, no syscall, O(1), bounded — the same cost every time.",
   "Two operational details bite people. First, a pool is big — ObjectPool<Order, 4096> is on the order of 128 KB, so it must be a member or a static, never a local, or you blow a worker thread's stack. Second, every alloc needs its free: forget it and the pool is silently exhausted at tick 4096, alloc() starts returning null, and your bot goes quiet without crashing. Log exhaustion loudly.",
   "Ordering matters with a bump allocator. The pmr container that borrowed from the arena must be destroyed *before* you call release(), which in practice means putting the scratch container in an inner scope and resetting after it dies. Getting that backwards is a use-after-reset that no test will reliably catch.",
-  "Determinism, not throughput, is the deliverable. Benchmark pool alloc/free against new/delete in a tight loop and report both the median and the tail: the median improves a little, and the tail improves a lot. The tail is the number the LATENCY tab ranks you on."
+  "Determinism, not throughput, is the deliverable. Benchmark pool alloc/free against new/delete in a tight loop and report both the median and the tail: the median improves a little, and the tail improves a lot. The tail is the number the LATENCY tab ranks you on.",
+  "Polymorphism is where the pool meets the object model. The arena client uses virtual deliberately at one place — hft_bot.hpp declares virtual void on_book(...) at the client boundary — so you will hold strategy and order-handler objects through a Base*, often placement-new'd into a pool. Get the destructor virtual, never delete through a non-virtual base, and measure virtual against a direct call and a final one: on a monomorphic loop the difference is a couple of nanoseconds, but it is an inlining barrier, and the tick-to-trade body is where you take it out."
  ],
  "example": {"title": "In the arena",
   "text": "course/hft-columbia/project-starter/include/pool.hpp — the HW4 stub you fill in. The whole contract is in the comments: one pre-allocated buffer, a free list, and O(1) in both directions.",
@@ -407,15 +424,15 @@ struct Pool {
  {"q": "When is a bump (arena) allocator the right choice, and what does it give up?",
   "a": "When a group of objects shares a lifetime — classically everything a single tick needs. You keep one offset into a slab, return it and advance by the size rounded up to alignof(T), and reclaim everything with a single reset in O(1). What you give up is individual deallocation: you cannot free one object, so it is wrong for anything whose lifetime outlives the batch.",
   "level": "core", "skill": "perf.arena-allocator"},
- {"q": "What does std::pmr add over writing your own allocator, and which resource fits a per-tick scratch buffer?",
-  "a": "pmr makes the allocator a run-time value instead of part of the container's type, so std::pmr::vector<T> is one type whose memory comes from whatever memory_resource you hand it — no template plumbing through your call graph. For per-tick scratch the fit is monotonic_buffer_resource over a stack or member byte array: pure bump allocation with no heap traffic, then release() to reclaim the whole thing at tick end. For recycled fixed-size objects, unsynchronized_pool_resource.",
-  "level": "core", "skill": "cpp.pmr"},
+ {"q": "Precisely what does a virtual call cost, and when does it actually hurt?",
+  "a": "Mechanically: load the vptr out of the object, load the slot out of the vtable, then an indirect call — two dependent loads and a branch whose target is not known until the first load returns. On a loop with one hot target the predictor learns it and the marginal cost is a couple of nanoseconds; with several targets in the same loop you get mispredicts at roughly 15–20 cycles each. The larger cost is usually indirect: the compiler cannot inline through it, so constant folding stops at the call, and a fan-out of tiny virtuals scatters your instruction cache. final on the class, or a call on an exactly known type, lets the compiler devirtualise it.",
+  "level": "core", "skill": "perf.virtual-cost"},
+ {"q": "You keep Derived objects in a pool and release them through a Base*. What has to be true for that to be correct?",
+  "a": "The base destructor must be virtual, so that q->~Base() (or delete q) dispatches to the Derived destructor first and then the base's; without it the behaviour is undefined and in practice the Derived members are never destroyed. The slot must be sized and aligned for the largest Derived, the object must have been placement-new'd into it, and you must destroy it explicitly before pushing the slot back on the free list. And you hold the object by pointer or reference only — copying a Derived into a Base by value slices it.",
+  "level": "core", "skill": "cpp.virtual-dispatch"},
  {"q": "Your pool's alloc() starts returning nullptr an hour into the session and the bot silently stops trading. What happened?",
   "a": "A leak in pool terms: some path allocated a slot and never returned it, so after N ticks the free list is empty. It is not a crash and ASan cannot see it, because the memory is still validly owned by the pool. The fixes are structural — hand slots out through an RAII handle so the return happens in a destructor on every exit path, and instrument the pool so exhaustion is a loud, counted event rather than a quiet null.",
   "level": "senior", "skill": "perf.object-pool"},
- {"q": "Your pool hands out raw storage. How do you keep construction and destruction honest?",
-  "a": "Pair placement new with an explicit destructor call, and hide the pair behind an RAII handle so neither can be forgotten. alloc() returns raw bytes, the handle's constructor runs new (slot) T{args...}, and the handle's destructor calls p->~T() and pushes the slot back on the free list \u2014 so every exit path, including an exception, returns the slot exactly once. Without that, the two failure modes are a slot returned without its destructor running (a leak of whatever T owned) and a destructor run twice on a recycled slot.",
-  "level": "core", "skill": "cpp.placement-new"},
  {"q": "You put a pmr::vector on a monotonic_buffer_resource inside on_book and call release() at the end. Where is the trap?",
   "a": "Lifetime order. release() reclaims the whole slab, so the container that borrowed from it must be destroyed *before* the reset — otherwise its destructor touches memory the resource has already handed back, and a later tick will overwrite live data. The idiom is to scope the scratch container in an inner block and call release() after that block closes. A second trap is overflow: if the working set exceeds the buffer, monotonic_buffer_resource quietly falls back to the upstream heap resource, so you are allocating again without noticing.",
   "level": "senior", "skill": "perf.arena-allocator"}
