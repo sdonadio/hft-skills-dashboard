@@ -87,6 +87,11 @@ def deck(session, w, slides):
     return {"type": "deck", "session": session, "label": "Deck %s · %s" % (w.upper(), slides)}
 
 def lab(session, n, part):
+    # Session 5 has ONE lab (week05.md): Week-5 material = Part A, Week-6 = Part B.
+    if session == 5 and n == 6:
+        return {"type": "lab", "session": session,
+                "label": "Lab week 5 Part B \u00b7 %s" % part,
+                "url": "%sweek05.md#part-b-crtp-and-compile-time-design" % LABS}
     return {"type": "lab", "session": session,
             "label": "Lab week %d · %s" % (n, part),
             "url": "%sweek%02d.md" % (LABS, n)}
@@ -258,14 +263,14 @@ SKILLS = [
       4, [5], 3,
       [deck(4, "w4", "slides 15\u201318, 23\u201324"),
        lab(4, 4, "steps 7\u20138 \u2014 abstract Strategy, objects in your pool destroyed through the base pointer"),
-       lab(5, 6, "step 1 \u2014 the virtual version we replace"),
+       lab(5, 6, "step 6 \u2014 the virtual version we replace"),
        hw(4), midterm("oop"), final("core")], True),
     S("perf.virtual-cost", "perf", "What a virtual call costs",
       "You can describe the vptr/vtable indirection, explain that the real bill is the indirect branch and the inlining you lose, and say where a virtual still belongs in a trading system.",
       4, [5], 3,
       [deck(4, "w4", "slides 19\u201322"),
        lab(4, 4, "steps 9\u201310 \u2014 what virtual costs (bench), final & devirtualization"),
-       lab(5, 6, "step 2 \u2014 CRTP against the virtual baseline"),
+       lab(5, 6, "step 7 \u2014 CRTP against the virtual baseline"),
        hw(4), midterm("oop"), final("core")], True),
 
     # ------------------------------------------------------------- session 5
@@ -288,18 +293,18 @@ SKILLS = [
     S("cpp.constexpr", "cpp", "constexpr, consteval & static_assert",
       "You can compute a lookup table at compile time, check an assumption with static_assert so a violated invariant fails the build, and say what consteval forbids.",
       5, [], 3,
-      [deck(5, "w6", "slides 5\u20136"), lab(5, 6, "step 3 \u2014 a constexpr lookup table"),
+      [deck(5, "w6", "slides 5\u20136"), lab(5, 6, "step 8 \u2014 a constexpr lookup table"),
        hw(6), midterm("tpl")], True),
     S("cpp.crtp-policies", "cpp", "CRTP & policy-based design",
       "You can replace a virtual hierarchy with a base templated on its derived type, and compose behaviour from policy template parameters that cost nothing at run time.",
       5, [], 3,
-      [deck(5, "w6", "slides 11\u201312"), lab(5, 6, "steps 2 and 4 \u2014 CRTP and policies"),
+      [deck(5, "w6", "slides 11\u201312"), lab(5, 6, "steps 7 and 9 \u2014 CRTP and policies"),
        hw(6), midterm("tpl"), final("tpl")], True),
     S("cpp.variant-visit", "cpp", "std::variant + compile-time visitor dispatch",
       "You can mirror a tagged wire union as a std::variant and dispatch it with a visitor whose dead branches are discarded at compile time \u2014 no vtable, no allocation.",
       5, [], 3,
       [deck(5, "w5", "slide 16"), deck(5, "w6", "slides 13\u201314"),
-       lab(5, 6, "step 5 \u2014 variant + visitor dispatch"), hw(6), proj(1)]),
+       lab(5, 6, "step 10 \u2014 variant + visitor dispatch"), hw(6), proj(1)]),
 
     # ------------------------------------------------------------- session 6
     S("perf.open-addressing-hash", "perf", "Open-addressing hash maps",

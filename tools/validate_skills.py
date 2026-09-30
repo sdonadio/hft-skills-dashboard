@@ -103,7 +103,7 @@ for k in skills:
         elif w["type"] == "lab":
             chk(w["url"].startswith("https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week"),
                 "%s lab url wrong" % sid)
-            f = w["url"].rsplit("/", 1)[-1]
+            f = w["url"].rsplit("/", 1)[-1].split("#")[0]
             chk(os.path.exists(os.path.join(LABS_DIR, f)), "%s lab file %s does not exist" % (sid, f))
             chk("session" in w and 1 <= w["session"] <= 13, "%s lab where missing session" % sid)
             chk(w["session"] == k["introduced"] or w["session"] in k["practised"],

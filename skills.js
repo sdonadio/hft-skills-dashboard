@@ -1447,8 +1447,8 @@ window.SKILLS = {
         {
           "type": "lab",
           "session": 5,
-          "label": "Lab week 6 · step 1 — the virtual version we replace",
-          "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week06.md"
+          "label": "Lab week 5 Part B · step 6 — the virtual version we replace",
+          "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week05.md#part-b-crtp-and-compile-time-design"
         },
         {
           "type": "hw",
@@ -1491,8 +1491,8 @@ window.SKILLS = {
         {
           "type": "lab",
           "session": 5,
-          "label": "Lab week 6 · step 2 — CRTP against the virtual baseline",
-          "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week06.md"
+          "label": "Lab week 5 Part B · step 7 — CRTP against the virtual baseline",
+          "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week05.md#part-b-crtp-and-compile-time-design"
         },
         {
           "type": "hw",
@@ -1632,8 +1632,8 @@ window.SKILLS = {
         {
           "type": "lab",
           "session": 5,
-          "label": "Lab week 6 · step 3 — a constexpr lookup table",
-          "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week06.md"
+          "label": "Lab week 5 Part B · step 8 — a constexpr lookup table",
+          "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week05.md#part-b-crtp-and-compile-time-design"
         },
         {
           "type": "hw",
@@ -1664,8 +1664,8 @@ window.SKILLS = {
         {
           "type": "lab",
           "session": 5,
-          "label": "Lab week 6 · steps 2 and 4 — CRTP and policies",
-          "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week06.md"
+          "label": "Lab week 5 Part B · steps 7 and 9 — CRTP and policies",
+          "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week05.md#part-b-crtp-and-compile-time-design"
         },
         {
           "type": "hw",
@@ -1705,8 +1705,8 @@ window.SKILLS = {
         {
           "type": "lab",
           "session": 5,
-          "label": "Lab week 6 · step 5 — variant + visitor dispatch",
-          "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week06.md"
+          "label": "Lab week 5 Part B · step 10 — variant + visitor dispatch",
+          "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week05.md#part-b-crtp-and-compile-time-design"
         },
         {
           "type": "hw",
