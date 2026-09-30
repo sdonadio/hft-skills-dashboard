@@ -2,10 +2,17 @@
 """Validator for focus.js against FOCUS_SCHEMA.md."""
 import io, json, os, re, subprocess, sys
 
+import tempfile
+
 HERE = os.path.dirname(os.path.abspath(__file__))
-FOCUS = os.path.join(HERE, "focus.js")
-SKILLS = os.path.join(HERE, "skills.js")
-SNIPS = os.path.join(HERE, "snips")
+ROOT = os.path.dirname(HERE)                      # site root: focus.js, skills.js
+FOCUS = os.path.join(ROOT, "focus.js")
+SKILLS = os.path.join(ROOT, "skills.js")
+COMP_DIR = os.path.join(HERE, "snips")            # committed companion programs
+SNIPS = tempfile.mkdtemp(prefix="validate_focus_")  # generated sources + binaries
+# Slide counts come from the Columbia decks themselves (python-pptx).
+DECKS = os.environ.get("HFT_DECKS",
+                       "/Users/sdonadio/PycharmProjects/AlgoArena/course/hft-columbia")
 
 LEVELS = {"warm-up", "core", "senior"}
 
@@ -39,15 +46,14 @@ body = body[:-1]
 data = json.loads(body)          # strict JSON: no comments, no trailing commas
 print("1. JSON parse .......... OK  (%d bytes, %d top-level keys)" % (len(raw), len(data)))
 
-# ---------- 2. deck lengths, from the extracted deck texts ----------
+# ---------- 2. deck lengths, from the Columbia .pptx decks ----------
+from pptx import Presentation
 deck_len = {}
-for f in os.listdir(HERE):
-    m = re.fullmatch(r"deck_(w\d+)\.txt", f)
-    if not m: continue
-    txt = io.open(os.path.join(HERE, f), encoding="utf-8").read()
-    nums = [int(x) for x in re.findall(r"^--- %s slide (\d+) ---$" % m.group(1),
-                                       txt, re.M)]
-    deck_len[m.group(1)] = max(nums)
+for dk in sorted({d for ds in SESSION_DECKS.values() for d in ds}, key=lambda s: int(s[1:])):
+    path = os.path.join(DECKS, dk + ".pptx")
+    if not os.path.exists(path):
+        err("deck %s not found (set HFT_DECKS)" % path); deck_len[dk] = 0; continue
+    deck_len[dk] = len(Presentation(path).slides)
 print("2. deck lengths ........ " + " ".join("%s=%d" % (k, deck_len[k])
       for k in sorted(deck_len, key=lambda s: int(s[1:]))))
 
@@ -186,7 +192,7 @@ for tag, i, title, code in snippets:
             if frag not in code:
                 err("%s.c%d: companion %s does not match the displayed code (%r)"
                     % (tag, i, comp, frag))
-        text = io.open(os.path.join(SNIPS, comp), encoding="utf-8").read()
+        text = io.open(os.path.join(COMP_DIR, comp), encoding="utf-8").read()
         for frag in must:
             if frag not in text:
                 err("%s.c%d: %s is missing %r" % (tag, i, comp, frag))
