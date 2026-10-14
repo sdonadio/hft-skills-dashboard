@@ -86,7 +86,7 @@ missing, or is missing a particular session, that session page still renders its
    - `sessions` — one entry per session, keyed by `n`:
      - `focus` — 2–4 words, the ONE main technical focus (this is the session page's big title)
      - `tagline` — one sentence, shown under it
-     - `concepts[]` — 4–6 items in teaching order, `{ title, text, code?, deck? }`; `code` is a short
+     - `concepts[]` — 4–8 items in teaching order, `{ title, text, code?, deck? }`; `code` is a short
        snippet rendered in a dark monospace block with a copy button (labelled with `deck`, or with
        `course.lang` when there is no deck), `deck` is a small chip
      - `hft` — `{ paragraphs[] (or text), example?: { title, code, text } }` → the

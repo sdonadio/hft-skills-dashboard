@@ -23,7 +23,7 @@ HW = {  # n -> (canvas id, name, due date in America/New_York)
     6:  (1714430, "HW 6 — CRTP & compile-time computation", "2026-10-17"),
     7:  (1714431, "HW 7 — A fast order book + a fast symbol map", "2026-10-24"),
     8:  (1714432, "HW 8 — Rolling event counter (sliding window)", "2026-10-31"),
-    9:  (1714433, "HW 9 — A seqlock (one writer, many readers)", "2026-11-07"),
+    9:  (1714433, "HW 9 — A seqlock (one writer, many readers)", "2026-10-31"),
     10: (1714434, "HW 10 — An SPSC lock-free ring buffer", "2026-11-14"),
     11: (1714435, "HW 11 — A high-performance FIX parser", "2026-11-21"),
     12: (1714436, "HW 12 — Fast uint64 -> decimal (and a field encoder)", "2026-11-21"),
@@ -69,9 +69,12 @@ SESSIONS = [
     (4,  "2026-09-30", "Custom Allocators & Memory Pools + Runtime Polymorphism",                 ["w4"],        [4],      4,  1, None),
     (5,  "2026-10-07", "Templates & Generic Programming + Compile-Time & Policy-Based Design (CRTP)",
                                                                            ["w5", "w6"],  [5, 6],   5,  1, None),
-    (6,  "2026-10-14", "Data Structures for HFT — The Order Book",         ["w7"],        [7],      7,  2, None),
-    (7,  "2026-10-21", "Algorithmic Complexity & Time-Series",             ["w8"],        [8],      8,  2, None),
-    (8,  "2026-10-28", "Concurrency I — Atomics & Memory Models · Midterm",["w9"],        [9],      9,  3, "midterm"),
+    # Re-schedule 2026-10-14: sessions 6 and 7 fuse (w7+w8 taught from the fused w7 deck; w8
+    # superseded); Concurrency I moves to Oct 21; Oct 28 is the midterm only (no lecture).
+    (6,  "2026-10-14", "Data Structures for HFT \u2014 The Order Book, from vector to the Flat Book",
+                                                                           ["w7"],        [7, 8],   7,  2, None),
+    (7,  "2026-10-21", "Concurrency I \u2014 Atomics & Memory Models",     ["w9"],        [9],      9,  3, None),
+    (8,  "2026-10-28", "Midterm (in class, no lecture)",                   [],            [],       None, 2, "midterm"),
     (9,  "2026-11-04", "Concurrency II — Lock-Free Pipelines",             ["w10"],       [10],     10, 3, None),
     (10, "2026-11-11", "Network Protocols & Market Data + Async I/O & Serialization",
                                                                            ["w11", "w12"],[11, 12], 11, 4, None),
@@ -82,12 +85,20 @@ SESSIONS = [
                                                                            ["w15"],       [15],     15, 7, "final"),
 ]
 
+# session lab boxes that are not just "Lab — Week N" (the url is always labs[0])
+LAB_LABEL = {6: "Lab — Week 7 (in class) + Week 8 (take-home)"}
+
 # ---------------------------------------------------------------- where helpers
 def deck(session, w, slides):
     return {"type": "deck", "session": session, "label": "Deck %s · %s" % (w.upper(), slides)}
 
 def lab(session, n, part):
     # Session 5 has ONE lab (week05.md): Week-5 material = Part A, Week-6 = Part B.
+    # Session 6 (fused w7+w8): week07.md in class, week08.md is the take-home lab.
+    if session == 6 and n == 8:
+        return {"type": "lab", "session": session,
+                "label": "Lab week 8 (take-home) \u00b7 %s" % part,
+                "url": "%sweek08.md" % LABS}
     if session == 5 and n == 6:
         return {"type": "lab", "session": session,
                 "label": "Lab week 5 Part B \u00b7 %s" % part,
@@ -130,13 +141,13 @@ SKILLS = [
     S("trading.lob", "trading", "The central limit order book",
       "You can read a two-sided limit order book and compute the spread, mid, microprice and order-book imbalance from the top-of-book prices and sizes.",
       1, [6], 3,
-      [deck(1, "w1", "slides 9\u201311"), deck(6, "w7", "slide 14"),
+      [deck(1, "w1", "slides 9\u201311"), deck(6, "w7", "slide 26"),
        lab(1, 1, "step 4 and the hand-computed book in Your turn"),
        hw(1), final("sys")], True),
     S("trading.price-time-priority", "trading", "Price-time priority & the FIFO queue",
       "You can apply price-then-time priority to say which resting order fills first, and explain why a cancel-and-repost sends you to the back of the queue.",
       1, [6, 13], 3,
-      [deck(1, "w1", "slide 10"), deck(6, "w7", "slide 13"), deck(13, "w15", "slide 10"),
+      [deck(1, "w1", "slide 10"), deck(6, "w7", "slide 20"), deck(13, "w15", "slide 10"),
        hw(1), final("sys")], True),
     S("trading.tick-to-trade", "trading", "Tick-to-trade latency & the tail",
       "You can define tick-to-trade latency, report it as p50/p99/p99.9 instead of a mean, and explain why the tail is what decides an HFT race.",
@@ -160,7 +171,7 @@ SKILLS = [
     S("tools.arena-client", "tools", "Writing a bot on the arena C++ client",
       "You can subclass the arena WebSocket bot client, override on_book/on_fill/on_ack, and place or cancel orders from the hot path.",
       1, [6], 2,
-      [deck(1, "w1", "slides 16\u201317"), deck(6, "w7", "slide 15"),
+      [deck(1, "w1", "slides 16\u201317"), deck(6, "w7", "slides 26\u201327"),
        lab(1, 1, "step 3 \u2014 connect and get on the board"), proj(0)]),
     S("tools.replay-harness", "tools", "Offline replay & percentile reporting",
       "You can replay a recorded tape through your bot offline and read the p50/p99/p99.9 table it prints, so an A/B change is measured rather than guessed.",
@@ -198,8 +209,8 @@ SKILLS = [
        lab(2, 2, "step 4 \u2014 reproduce then fix false sharing"), final("cache")], True),
     S("perf.data-layout", "perf", "Data layout: contiguous, row-major, SoA vs AoS",
       "You can choose a contiguous layout over pointer chasing, order a nested loop so it walks memory in stride, and split the hot fields out of a struct a scan only partly reads.",
-      2, [6, 7], 3,
-      [deck(2, "w2", "slides 14\u201316, 18"), deck(6, "w7", "slide 9"), deck(7, "w8", "slide 6"),
+      2, [6], 3,
+      [deck(2, "w2", "slides 14\u201316, 18"), deck(6, "w7", "slides 17, 23"),
        lab(2, 2, "step 3 \u2014 cache-friendly vs pointer-chasing"), hw(2), final("cache")], True),
     S("perf.branch-prediction", "perf", "Branch prediction & the pipeline",
       "You can explain what a mispredicted branch costs on a deep pipeline and name ways to make a hot branch predictable or remove it.",
@@ -207,7 +218,7 @@ SKILLS = [
       [deck(2, "w2", "slide 19"), deck(12, "w14", "slide 7"), final("simd")], True),
     S("tools.benchmarking", "tools", "Honest micro-benchmarking",
       "You can time a hot function with steady_clock in a release build, warm up first, keep the optimiser from deleting the work, and report percentiles rather than one mean.",
-      2, [4, 6, 8, 9], 3,
+      2, [4, 6, 7, 9], 3,
       [deck(2, "w2", "slides 24, 26, 28"), lab(2, 2, "step 1 \u2014 your first honest micro-benchmark"),
        hw(2), final("meas")], True),
 
@@ -250,8 +261,8 @@ SKILLS = [
     # ------------------------------------------------------------- session 4
     S("perf.object-pool", "perf", "Fixed-size object pools",
       "You can implement a fixed-size object pool whose free slots hold the free-list, so allocate and free are O(1) pointer swaps that never call the system allocator.",
-      4, [7], 3,
-      [deck(4, "w4", "slides 8, 10, 26"), deck(7, "w8", "slide 7"),
+      4, [6], 3,
+      [deck(4, "w4", "slides 8, 10, 26"),
        lab(4, 4, "steps 3\u20134 \u2014 alloc and free in O(1)"), hw(4), proj(1), final("sys")], True),
     S("cpp.placement-new", "cpp", "Placement new & explicit destruction",
       "You can construct an object into storage you already own with placement new, and destroy it by calling its destructor explicitly before reusing the slot.",
@@ -318,81 +329,80 @@ SKILLS = [
     # ------------------------------------------------------------- session 6
     S("perf.open-addressing-hash", "perf", "Open-addressing hash maps",
       "You can implement a flat open-addressing hash map with a power-of-two mask and linear probing, and explain why it beats a chaining map in cache.",
-      6, [7], 3,
-      [deck(6, "w7", "slides 5\u20136"), deck(7, "w8", "slide 15"),
+      6, [], 3,
+      [deck(6, "w7", "slides 12\u201313"),
        lab(6, 7, "step 7 \u2014 SymMap, open addressing"), hw(7), final("sys")], True),
     S("cpp.stl-containers", "cpp", "Choosing an STL container for an access pattern",
-      "You can choose between std::map, std::unordered_map and a heap for ordered iteration, point lookup or best-element access, and state the cache cost of each.",
-      6, [7], 2,
-      [deck(6, "w7", "slide 7"), deck(7, "w8", "slide 6"),
+      "You can choose between std::vector, std::list, std::map, std::unordered_map and a heap for each order-book question \u2014 order by id, level by price, best price \u2014 and state the cache cost of each.",
+      6, [], 2,
+      [deck(6, "w7", "slides 5\u201314, 16"),
        lab(6, 7, "step 1 \u2014 why not just std::map"), hw(7), midterm("stl"), final("tpl")]),
     S("trading.flat-order-book", "trading", "A flat, price-indexed local order book",
       "You can mirror an exchange book as a contiguous price-indexed level array with a cached top-of-book, so add, cancel and reading the touch stay O(1).",
       6, [], 3,
-      [deck(6, "w7", "slides 9\u201311, 15"),
+      [deck(6, "w7", "slides 16\u201319"),
        lab(6, 7, "steps 2\u20136 \u2014 the level array, best_bid/best_ask, cancel"),
        hw(7), proj(2), final("sys")]),
     S("trading.queue-position", "trading", "Tracking your queue position",
       "You can track how much size rests ahead of your order at a price level and use that queue_ahead to judge your fill probability.",
       6, [13], 3,
-      [deck(6, "w7", "slides 13\u201315"), deck(13, "w15", "slide 10"),
+      [deck(6, "w7", "slides 20, 26"), deck(13, "w15", "slide 10"),
        hw(7), proj(2), final("sys")]),
 
-    # ------------------------------------------------------------- session 7
+    # session 6 (cont.): the w8 material, taught since 2026-10-14 inside the fused w7 deck.
+    # Slide citations point at the fused 29-slide w7 deck; week08.md is the take-home lab.
     S("perf.complexity-in-cache-terms", "perf", "Complexity counted in cache misses",
       "You can argue about cost in memory accesses rather than instructions, and show why a linear scan over a small contiguous array beats an O(log n) walk over heap nodes.",
-      7, [], 3,
-      [deck(7, "w8", "slides 5\u20137"), lab(7, 8, "step 1 \u2014 the complexity framing"),
+      6, [], 3,
+      [deck(6, "w7", "slides 22\u201323"), lab(6, 8, "step 1 \u2014 the complexity framing"),
        midterm("cx"), final("tpl")]),
     S("perf.amortized-reserve", "perf", "Amortized cost & reserving up front",
       "You can explain why vector push_back is O(1) amortized and why reserving up front removes the occasional reallocation from your tail.",
-      7, [], 2,
-      [deck(7, "w8", "slides 5, 7"), midterm("stl"), final("meas")]),
+      6, [], 2,
+      [deck(6, "w7", "slide 22"), midterm("stl"), final("meas")]),
     S("cpp.ring-buffer", "cpp", "A fixed-capacity ring buffer",
       "You can implement a fixed-capacity ring buffer over inline array storage with O(1) push, overwriting or expiring the oldest entry and never allocating.",
-      7, [], 3,
-      [deck(7, "w8", "slides 9\u201310"),
-       lab(7, 8, "steps 2\u20135 \u2014 a ring of timestamps"), hw(8), final("sys")]),
+      6, [], 3,
+      [deck(6, "w7", "slide 24"), lab(6, 8, "steps 2\u20135 \u2014 a ring of timestamps"), hw(8), final("sys")]),
     S("perf.incremental-computation", "perf", "Update, don't recompute",
       "You can replace a windowed recompute with an online update \u2014 a running mean, Welford variance or EMA \u2014 so every tick costs the same O(1) and the tail stays flat.",
-      7, [], 3,
-      [deck(7, "w8", "slides 12\u201313"),
-       lab(7, 8, "step 7 \u2014 Welford's online mean/variance"), hw(8), final("meas")]),
+      6, [], 3,
+      [deck(6, "w7", "slide 25"), lab(6, 8, "step 7 \u2014 Welford's online mean/variance"), hw(8), final("meas")]),
     S("trading.obi-signal", "trading", "Turning microprice and imbalance into a signal",
       "You can fold microprice and order-book imbalance into online state and gate an order on a z-score, without looping a window on the hot path.",
-      7, [], 2,
-      [deck(7, "w8", "slides 14\u201315"), hw(8), proj(2)]),
+      6, [], 2,
+      [deck(6, "w7", "slides 26\u201327"), hw(8), proj(2)]),
 
-    # ------------------------------------------------------------- session 8
+    # ------------------------------------------------------------- session 7 (w9; session 8 is the midterm)
     S("cpp.threads", "cpp", "std::thread and shared state",
       "You can start and join a std::thread and say which state is private to a thread and which is shared through the address space.",
-      8, [], 2,
-      [deck(8, "w9", "slide 5"), lab(8, 9, "step 1 \u2014 reproduce the race"), final("thr")]),
+      7, [], 2,
+      [deck(7, "w9", "slide 5"), lab(7, 9, "step 1 \u2014 reproduce the race"), final("thr")]),
     S("cpp.data-races", "cpp", "Data races & happens-before",
       "You can identify a data race, explain that it is undefined behaviour rather than merely a wrong value, and name the happens-before edge that would make the access legal.",
-      8, [], 3,
-      [deck(8, "w9", "slides 6\u20137"),
-       lab(8, 9, "steps 1\u20133 \u2014 the race, TSan, and the volatile non-fix"),
+      7, [], 3,
+      [deck(7, "w9", "slides 6\u20137"),
+       lab(7, 9, "steps 1\u20133 \u2014 the race, TSan, and the volatile non-fix"),
        hw(9), final("thr")], True),
     S("cpp.atomics-memory-order", "cpp", "std::atomic & memory ordering",
       "You can choose relaxed, acquire/release or seq_cst for each atomic operation and justify it with the happens-before edge you actually need.",
-      8, [9], 3,
-      [deck(8, "w9", "slides 9\u201312, 17"), deck(9, "w10", "slide 14"),
-       lab(8, 9, "steps 4\u20135 \u2014 atomic, then acquire/release"), hw(9), final("atom")], True),
+      7, [9], 3,
+      [deck(7, "w9", "slides 9\u201312, 17"), deck(9, "w10", "slide 14"),
+       lab(7, 9, "steps 4\u20135 \u2014 atomic, then acquire/release"), hw(9), final("atom")], True),
     S("cpp.mutex-toolbox", "cpp", "Mutexes, shared_mutex & condition variables",
       "You can take a mutex through a lock_guard, pick shared_mutex for read-mostly state, and wait on a condition variable with a predicate.",
-      8, [], 2,
-      [deck(8, "w9", "slide 14"),
-       lab(8, 9, "step 6 \u2014 the mutex answer, correct but slow"), final("thr")]),
+      7, [], 2,
+      [deck(7, "w9", "slide 14"),
+       lab(7, 9, "step 6 \u2014 the mutex answer, correct but slow"), final("thr")]),
     S("perf.lock-tail-cost", "perf", "Why a lock on the hot path is a tail bomb",
       "You can trace how a contended mutex becomes a kernel wait or a priority inversion, and show the damage in p99.9 rather than in the median.",
-      8, [], 3,
-      [deck(8, "w9", "slides 15\u201316"),
-       lab(8, 9, "step 6 \u2014 mutex against the atomic version"), hw(9), final("atom")], True),
+      7, [], 3,
+      [deck(7, "w9", "slides 15\u201316"),
+       lab(7, 9, "step 6 \u2014 mutex against the atomic version"), hw(9), final("atom")], True),
     S("tools.thread-sanitizer", "tools", "Finding races with ThreadSanitizer",
       "You can build a target with -fsanitize=thread, run it under load, and use the report to name the two accesses that race.",
-      8, [9, 12], 2,
-      [deck(12, "w14", "slide 15"), lab(8, 9, "step 2 \u2014 let ThreadSanitizer name it"),
+      7, [9, 12], 2,
+      [deck(12, "w14", "slide 15"), lab(7, 9, "step 2 \u2014 let ThreadSanitizer name it"),
        lab(9, 10, "step 8 \u2014 two threads + ThreadSanitizer"), proj(3), final("meas")]),
 
     # ------------------------------------------------------------- session 9
@@ -561,15 +571,16 @@ def build():
     for n, date, title, decks, labs, hwn, phase, exam in SESSIONS:
         intro = sorted([s["id"] for s in SKILLS if s["introduced"] == n], key=order.get)
         prac = sorted([s["id"] for s in SKILLS if n in s["practised"]], key=order.get)
-        hid, hname, hdue = HW[hwn]
         pid, pname, pdue = PH[phase]
         sessions.append({
             "n": n, "date": date, "title": title, "decks": decks,
-            "lab": {"label": "Lab — Week %d" % labs[0], "url": "%sweek%02d.md" % (LABS, labs[0])},
-            "hw": {"label": hname, "url": CANVAS + str(hid), "due": hdue},
+            "lab": ({"label": LAB_LABEL.get(n, "Lab — Week %d" % labs[0]),
+                     "url": "%sweek%02d.md" % (LABS, labs[0])} if labs else None),
+            "hw": ({"label": HW[hwn][1], "url": CANVAS + str(HW[hwn][0]), "due": HW[hwn][2]}
+                   if hwn else None),
             "project": {"label": pname, "url": CANVAS + str(pid), "due": pdue},
             "exam": exam,
-            "companion_url": "%sweek%s.html" % (COMP, decks[0][1:]),
+            "companion_url": ("%sweek%s.html" % (COMP, decks[0][1:])) if decks else None,
             "skills": intro + prac,
         })
     return {

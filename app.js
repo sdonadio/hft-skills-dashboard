@@ -684,7 +684,9 @@
     clear(host);
     function afterToggle() { refreshCounts(); }
     for (k = 0; k < list.length; k++) host.appendChild(skillRow(list[k], n, afterToggle));
-    if (!list.length) add(host, el("p", "empty", "No skills are listed for this session yet."));
+    if (!list.length) add(host, el("p", "empty", s.exam
+      ? "No new skills in this session: it is the " + String(s.exam) + " exam. Revise the checklists of the sessions it covers."
+      : "No skills are listed for this session yet."));
 
     function refreshCounts() {
       var t = tally(list), q;

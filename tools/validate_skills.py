@@ -13,7 +13,8 @@ assert raw.startswith("window.SKILLS = "), "must start with window.SKILLS = "
 assert raw.endswith(";"), "must end with ;"
 data = json.loads(raw[len("window.SKILLS = "):-1])
 
-LAB_OF = {1: [1], 2: [2], 3: [3], 4: [4], 5: [5, 6], 6: [7], 7: [8], 8: [9],
+# 2026-10-14 re-schedule: session 6 = w7+w8 (week08.md take-home), 7 = w9, 8 = midterm only.
+LAB_OF = {1: [1], 2: [2], 3: [3], 4: [4], 5: [5, 6], 6: [7, 8], 7: [9], 8: [],
           9: [10], 10: [11, 12], 11: [13], 12: [14], 13: [15]}
 
 errs = []
@@ -41,11 +42,12 @@ for s in sess:
     chk(bool(re.fullmatch(r"20\d\d-\d\d-\d\d", s.get("date", ""))),
         "session %s bad date %r" % (s["n"], s.get("date")))
     chk(bool(s.get("title")), "session %s missing title" % s["n"])
-    chk(bool(s.get("decks")), "session %s missing decks" % s["n"])
+    exam_only = bool(s.get("exam")) and not s.get("decks")   # e.g. the midterm night
+    chk(bool(s.get("decks")) or exam_only, "session %s missing decks" % s["n"])
     for d in s["decks"]:
         chk(os.path.exists(os.path.join(DECK_DIR, d + ".pptx")), "session %s deck %s missing" % (s["n"], d))
     chk(s.get("exam") in (None, "midterm", "final"), "session %s bad exam" % s["n"])
-    chk(s["companion_url"].startswith("https://sdonadio.github.io/low-latency-trading-arena/week"),
+    chk((exam_only and s["companion_url"] is None) or s["companion_url"].startswith("https://sdonadio.github.io/low-latency-trading-arena/week"),
         "session %s bad companion_url" % s["n"])
     for key in ("lab", "hw", "project"):
         v = s.get(key)
@@ -144,7 +146,8 @@ for k in skills:
     got = {s["n"] for s in sess if k["id"] in s["skills"]}
     chk(want == got, "%s should appear in sessions %r but appears in %r" % (k["id"], sorted(want), sorted(got)))
 for s in sess:
-    chk(5 <= len(s["skills"]) <= 9, "session %d has %d skills (want 5-9)" % (s["n"], len(s["skills"])))
+    lo = 0 if (s["exam"] and not s["decks"]) else 5          # an exam-only session adds no skills
+    chk(lo <= len(s["skills"]) <= 15, "session %d has %d skills (want %d-15)" % (s["n"], len(s["skills"]), lo))
 
 # --- report
 print("=" * 68)

@@ -208,12 +208,12 @@ window.SKILLS = {
     {
       "n": 6,
       "date": "2026-10-14",
-      "title": "Data Structures for HFT — The Order Book",
+      "title": "Data Structures for HFT — The Order Book, from vector to the Flat Book",
       "decks": [
         "w7"
       ],
       "lab": {
-        "label": "Lab — Week 7",
+        "label": "Lab — Week 7 (in class) + Week 8 (take-home)",
         "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week07.md"
       },
       "hw": {
@@ -233,52 +233,23 @@ window.SKILLS = {
         "cpp.stl-containers",
         "trading.flat-order-book",
         "trading.queue-position",
-        "trading.lob",
-        "trading.price-time-priority",
-        "tools.arena-client",
-        "perf.data-layout",
-        "tools.benchmarking"
-      ]
-    },
-    {
-      "n": 7,
-      "date": "2026-10-21",
-      "title": "Algorithmic Complexity & Time-Series",
-      "decks": [
-        "w8"
-      ],
-      "lab": {
-        "label": "Lab — Week 8",
-        "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week08.md"
-      },
-      "hw": {
-        "label": "HW 8 — Rolling event counter (sliding window)",
-        "url": "https://courseworks2.columbia.edu/courses/252758/assignments/1714432",
-        "due": "2026-10-31"
-      },
-      "project": {
-        "label": "Project — Phase 2: The Local Order Book",
-        "url": "https://courseworks2.columbia.edu/courses/252758/assignments/1714414",
-        "due": "2026-10-28"
-      },
-      "exam": null,
-      "companion_url": "https://sdonadio.github.io/low-latency-trading-arena/week8.html",
-      "skills": [
         "perf.complexity-in-cache-terms",
         "perf.amortized-reserve",
         "cpp.ring-buffer",
         "perf.incremental-computation",
         "trading.obi-signal",
+        "trading.lob",
+        "trading.price-time-priority",
+        "tools.arena-client",
         "perf.data-layout",
-        "perf.object-pool",
-        "perf.open-addressing-hash",
-        "cpp.stl-containers"
+        "tools.benchmarking",
+        "perf.object-pool"
       ]
     },
     {
-      "n": 8,
-      "date": "2026-10-28",
-      "title": "Concurrency I — Atomics & Memory Models · Midterm",
+      "n": 7,
+      "date": "2026-10-21",
+      "title": "Concurrency I — Atomics & Memory Models",
       "decks": [
         "w9"
       ],
@@ -289,14 +260,14 @@ window.SKILLS = {
       "hw": {
         "label": "HW 9 — A seqlock (one writer, many readers)",
         "url": "https://courseworks2.columbia.edu/courses/252758/assignments/1714433",
-        "due": "2026-11-07"
+        "due": "2026-10-31"
       },
       "project": {
         "label": "Project — Phase 3: Threading to Accelerate",
         "url": "https://courseworks2.columbia.edu/courses/252758/assignments/1714415",
         "due": "2026-11-11"
       },
-      "exam": "midterm",
+      "exam": null,
       "companion_url": "https://sdonadio.github.io/low-latency-trading-arena/week9.html",
       "skills": [
         "cpp.threads",
@@ -307,6 +278,22 @@ window.SKILLS = {
         "tools.thread-sanitizer",
         "tools.benchmarking"
       ]
+    },
+    {
+      "n": 8,
+      "date": "2026-10-28",
+      "title": "Midterm (in class, no lecture)",
+      "decks": [],
+      "lab": null,
+      "hw": null,
+      "project": {
+        "label": "Project — Phase 2: The Local Order Book",
+        "url": "https://courseworks2.columbia.edu/courses/252758/assignments/1714414",
+        "due": "2026-10-28"
+      },
+      "exam": "midterm",
+      "companion_url": null,
+      "skills": []
     },
     {
       "n": 9,
@@ -505,7 +492,7 @@ window.SKILLS = {
         {
           "type": "deck",
           "session": 6,
-          "label": "Deck W7 · slide 14"
+          "label": "Deck W7 · slide 26"
         },
         {
           "type": "lab",
@@ -545,7 +532,7 @@ window.SKILLS = {
         {
           "type": "deck",
           "session": 6,
-          "label": "Deck W7 · slide 13"
+          "label": "Deck W7 · slide 20"
         },
         {
           "type": "deck",
@@ -715,7 +702,7 @@ window.SKILLS = {
         {
           "type": "deck",
           "session": 6,
-          "label": "Deck W7 · slide 15"
+          "label": "Deck W7 · slides 26–27"
         },
         {
           "type": "lab",
@@ -967,8 +954,7 @@ window.SKILLS = {
       "can": "You can choose a contiguous layout over pointer chasing, order a nested loop so it walks memory in stride, and split the hot fields out of a struct a scan only partly reads.",
       "introduced": 2,
       "practised": [
-        6,
-        7
+        6
       ],
       "depth": 3,
       "where": [
@@ -980,12 +966,7 @@ window.SKILLS = {
         {
           "type": "deck",
           "session": 6,
-          "label": "Deck W7 · slide 9"
-        },
-        {
-          "type": "deck",
-          "session": 7,
-          "label": "Deck W8 · slide 6"
+          "label": "Deck W7 · slides 17, 23"
         },
         {
           "type": "lab",
@@ -1042,7 +1023,7 @@ window.SKILLS = {
       "practised": [
         4,
         6,
-        8,
+        7,
         9
       ],
       "depth": 3,
@@ -1300,7 +1281,7 @@ window.SKILLS = {
       "can": "You can implement a fixed-size object pool whose free slots hold the free-list, so allocate and free are O(1) pointer swaps that never call the system allocator.",
       "introduced": 4,
       "practised": [
-        7
+        6
       ],
       "depth": 3,
       "where": [
@@ -1308,11 +1289,6 @@ window.SKILLS = {
           "type": "deck",
           "session": 4,
           "label": "Deck W4 · slides 8, 10, 26"
-        },
-        {
-          "type": "deck",
-          "session": 7,
-          "label": "Deck W8 · slide 7"
         },
         {
           "type": "lab",
@@ -1727,20 +1703,13 @@ window.SKILLS = {
       "name": "Open-addressing hash maps",
       "can": "You can implement a flat open-addressing hash map with a power-of-two mask and linear probing, and explain why it beats a chaining map in cache.",
       "introduced": 6,
-      "practised": [
-        7
-      ],
+      "practised": [],
       "depth": 3,
       "where": [
         {
           "type": "deck",
           "session": 6,
-          "label": "Deck W7 · slides 5–6"
-        },
-        {
-          "type": "deck",
-          "session": 7,
-          "label": "Deck W8 · slide 15"
+          "label": "Deck W7 · slides 12–13"
         },
         {
           "type": "lab",
@@ -1764,22 +1733,15 @@ window.SKILLS = {
       "id": "cpp.stl-containers",
       "category": "cpp",
       "name": "Choosing an STL container for an access pattern",
-      "can": "You can choose between std::map, std::unordered_map and a heap for ordered iteration, point lookup or best-element access, and state the cache cost of each.",
+      "can": "You can choose between std::vector, std::list, std::map, std::unordered_map and a heap for each order-book question — order by id, level by price, best price — and state the cache cost of each.",
       "introduced": 6,
-      "practised": [
-        7
-      ],
+      "practised": [],
       "depth": 2,
       "where": [
         {
           "type": "deck",
           "session": 6,
-          "label": "Deck W7 · slide 7"
-        },
-        {
-          "type": "deck",
-          "session": 7,
-          "label": "Deck W8 · slide 6"
+          "label": "Deck W7 · slides 5–14, 16"
         },
         {
           "type": "lab",
@@ -1815,7 +1777,7 @@ window.SKILLS = {
         {
           "type": "deck",
           "session": 6,
-          "label": "Deck W7 · slides 9–11, 15"
+          "label": "Deck W7 · slides 16–19"
         },
         {
           "type": "lab",
@@ -1854,7 +1816,7 @@ window.SKILLS = {
         {
           "type": "deck",
           "session": 6,
-          "label": "Deck W7 · slides 13–15"
+          "label": "Deck W7 · slides 20, 26"
         },
         {
           "type": "deck",
@@ -1883,19 +1845,19 @@ window.SKILLS = {
       "category": "perf",
       "name": "Complexity counted in cache misses",
       "can": "You can argue about cost in memory accesses rather than instructions, and show why a linear scan over a small contiguous array beats an O(log n) walk over heap nodes.",
-      "introduced": 7,
+      "introduced": 6,
       "practised": [],
       "depth": 3,
       "where": [
         {
           "type": "deck",
-          "session": 7,
-          "label": "Deck W8 · slides 5–7"
+          "session": 6,
+          "label": "Deck W7 · slides 22–23"
         },
         {
           "type": "lab",
-          "session": 7,
-          "label": "Lab week 8 · step 1 — the complexity framing",
+          "session": 6,
+          "label": "Lab week 8 (take-home) · step 1 — the complexity framing",
           "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week08.md"
         },
         {
@@ -1914,14 +1876,14 @@ window.SKILLS = {
       "category": "perf",
       "name": "Amortized cost & reserving up front",
       "can": "You can explain why vector push_back is O(1) amortized and why reserving up front removes the occasional reallocation from your tail.",
-      "introduced": 7,
+      "introduced": 6,
       "practised": [],
       "depth": 2,
       "where": [
         {
           "type": "deck",
-          "session": 7,
-          "label": "Deck W8 · slides 5, 7"
+          "session": 6,
+          "label": "Deck W7 · slide 22"
         },
         {
           "type": "exam",
@@ -1939,19 +1901,19 @@ window.SKILLS = {
       "category": "cpp",
       "name": "A fixed-capacity ring buffer",
       "can": "You can implement a fixed-capacity ring buffer over inline array storage with O(1) push, overwriting or expiring the oldest entry and never allocating.",
-      "introduced": 7,
+      "introduced": 6,
       "practised": [],
       "depth": 3,
       "where": [
         {
           "type": "deck",
-          "session": 7,
-          "label": "Deck W8 · slides 9–10"
+          "session": 6,
+          "label": "Deck W7 · slide 24"
         },
         {
           "type": "lab",
-          "session": 7,
-          "label": "Lab week 8 · steps 2–5 — a ring of timestamps",
+          "session": 6,
+          "label": "Lab week 8 (take-home) · steps 2–5 — a ring of timestamps",
           "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week08.md"
         },
         {
@@ -1971,19 +1933,19 @@ window.SKILLS = {
       "category": "perf",
       "name": "Update, don't recompute",
       "can": "You can replace a windowed recompute with an online update — a running mean, Welford variance or EMA — so every tick costs the same O(1) and the tail stays flat.",
-      "introduced": 7,
+      "introduced": 6,
       "practised": [],
       "depth": 3,
       "where": [
         {
           "type": "deck",
-          "session": 7,
-          "label": "Deck W8 · slides 12–13"
+          "session": 6,
+          "label": "Deck W7 · slide 25"
         },
         {
           "type": "lab",
-          "session": 7,
-          "label": "Lab week 8 · step 7 — Welford's online mean/variance",
+          "session": 6,
+          "label": "Lab week 8 (take-home) · step 7 — Welford's online mean/variance",
           "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week08.md"
         },
         {
@@ -2003,14 +1965,14 @@ window.SKILLS = {
       "category": "trading",
       "name": "Turning microprice and imbalance into a signal",
       "can": "You can fold microprice and order-book imbalance into online state and gate an order on a z-score, without looping a window on the hot path.",
-      "introduced": 7,
+      "introduced": 6,
       "practised": [],
       "depth": 2,
       "where": [
         {
           "type": "deck",
-          "session": 7,
-          "label": "Deck W8 · slides 14–15"
+          "session": 6,
+          "label": "Deck W7 · slides 26–27"
         },
         {
           "type": "hw",
@@ -2030,18 +1992,18 @@ window.SKILLS = {
       "category": "cpp",
       "name": "std::thread and shared state",
       "can": "You can start and join a std::thread and say which state is private to a thread and which is shared through the address space.",
-      "introduced": 8,
+      "introduced": 7,
       "practised": [],
       "depth": 2,
       "where": [
         {
           "type": "deck",
-          "session": 8,
+          "session": 7,
           "label": "Deck W9 · slide 5"
         },
         {
           "type": "lab",
-          "session": 8,
+          "session": 7,
           "label": "Lab week 9 · step 1 — reproduce the race",
           "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week09.md"
         },
@@ -2057,18 +2019,18 @@ window.SKILLS = {
       "category": "cpp",
       "name": "Data races & happens-before",
       "can": "You can identify a data race, explain that it is undefined behaviour rather than merely a wrong value, and name the happens-before edge that would make the access legal.",
-      "introduced": 8,
+      "introduced": 7,
       "practised": [],
       "depth": 3,
       "where": [
         {
           "type": "deck",
-          "session": 8,
+          "session": 7,
           "label": "Deck W9 · slides 6–7"
         },
         {
           "type": "lab",
-          "session": 8,
+          "session": 7,
           "label": "Lab week 9 · steps 1–3 — the race, TSan, and the volatile non-fix",
           "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week09.md"
         },
@@ -2089,7 +2051,7 @@ window.SKILLS = {
       "category": "cpp",
       "name": "std::atomic & memory ordering",
       "can": "You can choose relaxed, acquire/release or seq_cst for each atomic operation and justify it with the happens-before edge you actually need.",
-      "introduced": 8,
+      "introduced": 7,
       "practised": [
         9
       ],
@@ -2097,7 +2059,7 @@ window.SKILLS = {
       "where": [
         {
           "type": "deck",
-          "session": 8,
+          "session": 7,
           "label": "Deck W9 · slides 9–12, 17"
         },
         {
@@ -2107,7 +2069,7 @@ window.SKILLS = {
         },
         {
           "type": "lab",
-          "session": 8,
+          "session": 7,
           "label": "Lab week 9 · steps 4–5 — atomic, then acquire/release",
           "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week09.md"
         },
@@ -2128,18 +2090,18 @@ window.SKILLS = {
       "category": "cpp",
       "name": "Mutexes, shared_mutex & condition variables",
       "can": "You can take a mutex through a lock_guard, pick shared_mutex for read-mostly state, and wait on a condition variable with a predicate.",
-      "introduced": 8,
+      "introduced": 7,
       "practised": [],
       "depth": 2,
       "where": [
         {
           "type": "deck",
-          "session": 8,
+          "session": 7,
           "label": "Deck W9 · slide 14"
         },
         {
           "type": "lab",
-          "session": 8,
+          "session": 7,
           "label": "Lab week 9 · step 6 — the mutex answer, correct but slow",
           "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week09.md"
         },
@@ -2155,18 +2117,18 @@ window.SKILLS = {
       "category": "perf",
       "name": "Why a lock on the hot path is a tail bomb",
       "can": "You can trace how a contended mutex becomes a kernel wait or a priority inversion, and show the damage in p99.9 rather than in the median.",
-      "introduced": 8,
+      "introduced": 7,
       "practised": [],
       "depth": 3,
       "where": [
         {
           "type": "deck",
-          "session": 8,
+          "session": 7,
           "label": "Deck W9 · slides 15–16"
         },
         {
           "type": "lab",
-          "session": 8,
+          "session": 7,
           "label": "Lab week 9 · step 6 — mutex against the atomic version",
           "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week09.md"
         },
@@ -2187,7 +2149,7 @@ window.SKILLS = {
       "category": "tools",
       "name": "Finding races with ThreadSanitizer",
       "can": "You can build a target with -fsanitize=thread, run it under load, and use the report to name the two accesses that race.",
-      "introduced": 8,
+      "introduced": 7,
       "practised": [
         9,
         12
@@ -2201,7 +2163,7 @@ window.SKILLS = {
         },
         {
           "type": "lab",
-          "session": 8,
+          "session": 7,
           "label": "Lab week 9 · step 2 — let ThreadSanitizer name it",
           "url": "https://github.com/sdonadio/hft-cpp-starter-columbia/blob/main/labs/week09.md"
         },

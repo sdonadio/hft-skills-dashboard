@@ -112,65 +112,125 @@ void stamp_and_send(SendFn&& send) {
 })
 
 # ===================== SESSION 6 =====================
+# Fused session (2026-10-14): decks w7 + w8 taught as one data-structures session
+# from the fused w7 deck (w8 superseded). Lab week07.md in class, week08.md take-home.
 S.append({
 "n": 6,
-"focus": "Data structures: building the order book",
-"tagline": "Two sides, resting size at every price, and three operations that must stay O(1) and in cache — add, cancel, and read the touch.",
+"focus": "Choosing the data structure for each order-book question",
+"tagline": "An order book answers three questions on every message — Q1: which order has this id? Q2: which level has this price? Q3: what are the best prices? — and each container answers them at a different cost in cache misses.",
 "concepts": [
- {"title": "Hash tables: chaining versus open addressing",
-  "text": "Order-ID and symbol lookups are the workhorse, and both collision strategies are O(1) on average — the constant factor is decided by memory layout. Chaining (what std::unordered_map does) makes each bucket a linked list of heap nodes, so every collision is a pointer chase and a likely cache miss. Open addressing probes the next slot of one flat array, so probes stay in cache and the prefetcher helps.",
-  "code": """struct Slot { uint64_t key = 0; uint32_t val = 0; bool used = false; };
-std::array<Slot, 8> t{}; const uint64_t mask = 7;      // power of two -> AND, not %
-auto put = [&](uint64_t k, uint32_t v) {
-  uint64_t i = k & mask;
-  while (t[i].used && t[i].key != k) i = (i + 1) & mask;   // walk the NEXT slot
-  t[i] = {k, v, true};
-};
-put(1, 100); put(9, 900);                     // 9 & 7 == 1: they collide
-std::cout << t[1].key << ' ' << t[2].key << ' ' << t[2].val << '\\n';
-// 1 9 900     -- the collision landed in the adjacent slot, same cache line""",
+ {"title": "std::vector: contiguous, and honest about its costs",
+  "text": "The default container and the yardstick for every other one: elements sit back to back, so v[i] is one address computation and a scan streams through cache lines the prefetcher already fetched. push_back is amortized O(1) — most pushes are a store, but when capacity runs out the vector allocates and moves everything, and that one O(n) push is a latency spike. Inserting in the middle is O(n) because everything after it shifts. For Q2 a sorted vector of price levels plus binary search (lower_bound) is O(log n) with no pointers at all.",
+  "code": """std::vector<int> v; std::size_t reallocs = 0, cap = 0;
+for (int i = 0; i < 1000; ++i) { v.push_back(i);                  // amortized O(1)...
+  if (v.capacity() != cap) { ++reallocs; cap = v.capacity(); } }  // ...except these
+v.insert(v.begin() + 500, -1);                    // O(n): shifts 500 ints right
+std::vector<int> px{9990, 9995, 10000, 10005};    // sorted levels, in ticks
+auto it = std::lower_bound(px.begin(), px.end(), 10000);           // Q2: O(log n)
+std::cout << reallocs << ' ' << v[500] << ' ' << (it - px.begin()) << '\\n';
+// 11 -1 2     -- eleven copy-everything events without reserve()""",
   "deck": "Deck W7 · slides 5–6"},
- {"title": "Pick the container for the access pattern",
-  "text": "Ordered iteration favours a tree, point lookup favours a hash, and best-element access favours a heap — but contiguity beats big-O constants at the sizes a book actually holds. std::map is sorted and O(log n) with heap-scattered nodes; std::unordered_map is O(1) average with chaining and rehashing, so its tail is spiky; a priority_queue is array-backed and cache-friendly. Reserve up front and never rehash on the hot path.",
-  "deck": "Deck W7 · slide 7"},
- {"title": "The flat, price-indexed book",
-  "text": "Prices live on a fixed tick grid, so an integer index is exact and you do not need a general ordered map at all. Index = (price - base) / tick makes each level a slot in one contiguous array: add and cancel index straight to the level, the touch is a cached index you read with a single load, and matching walks adjacent slots in the direction the prefetcher expects.",
-  "code": """const double base = 99.00, tick = 0.01;       // index against a BASE tick
-std::array<uint32_t, 256> bid_qty{};
-int best = -1;
-auto idx = [&](double px) { return int((px - base) / tick + 0.5); };
-auto add = [&](double px, uint32_t q) {
-  int i = idx(px); bid_qty[i] += q; if (i > best) best = i;   // O(1), one line
-};
-add(100.00, 800); add(99.99, 600);
-std::printf("%d %d %.2f %u\\n", idx(100.00), idx(99.99), base + best * tick, bid_qty[best]);
-// 100 99 100.00 800""",
-  "deck": "Deck W7 · slides 9–10"},
- {"title": "A flat array is a BAND, not “all prices”",
-  "text": "This is the trap the starter header warns about. 65 536 one-cent slots indexed absolutely from $0.00 only covers $0.00–$655.35, and the arena lists names above that — so an absolute index walks off the end, and because the two side arrays are adjacent members it silently corrupts the other side of your own book. AddressSanitizer cannot see it, because it is an intra-object overflow. Index against a base tick and bounds-check both ends.",
-  "deck": "Deck W7 · slide 9"},
- {"title": "Add, cancel, match — and where you are allowed to scan",
-  "text": "Add indexes the level, bumps the aggregate quantity and order count, and nudges the cached best index if this price is a new touch. Cancel indexes and subtracts — and if the level empties and it was the touch, that is the one place you may scan inward for the next non-empty slot. Match starts at best, consumes size, and steps to the adjacent slot when a level clears: sequential access, O(1) in the common case.",
+ {"title": "std::list and std::forward_list: stable iterators, scattered nodes",
+  "text": "A list never moves an element, so an iterator stays valid until that element is erased: keep the iterator of each resting order and a cancel (Q1) is an O(1) unlink with no search. That is the one thing lists are good at. Everything else is a pointer chase — every node is its own heap allocation, so walking or searching a list is a cache miss per element. forward_list is the singly linked version: one pointer per node, and it can only insert_after / erase_after, because a node does not know its predecessor.",
+  "code": """std::list<int> q{100, 200, 300};                 // FIFO of order sizes at one level
+auto mine = std::next(q.begin());                // keep the iterator...
+q.push_back(400);                                // ...it is never invalidated
+q.erase(mine);                                   // Q1 cancel: O(1) unlink, no search
+std::forward_list<int> f{1, 2, 3};               // one pointer per node
+f.erase_after(f.begin());                        // no erase(it): needs the PREVIOUS node
+f.insert_after(f.begin(), 9);
+std::cout << q.size() << ' ' << q.back() << ' ' << *std::next(f.begin()) << '\\n';
+// 3 400 9""",
+  "deck": "Deck W7 · slides 7–8"},
+ {"title": "std::map and std::set: a red-black tree of sorted levels",
+  "text": "A balanced tree keeps price levels sorted at all times, which answers both remaining questions: find(price) is Q2 in O(log n), and the best bid and best ask are simply rbegin() and begin() — Q3. The cost is the node: every level is a separate heap allocation holding the key, the value, three pointers and a colour, so the log n steps of a lookup are log n probable cache misses, and inserting a new level allocates on the hot path.",
+  "code": """std::map<int, long> bids{{9998, 300}, {10000, 500}, {9999, 200}};  // price -> qty
+bids[10001] += 100;                              // new level: O(log n) + a heap node
+auto it = bids.find(9999);                       // Q2: O(log n) pointer hops
+std::cout << it->second << ' ' << bids.rbegin()->first << ' ' << bids.begin()->first << '\\n';
+bids.erase(10001);                               // level empties: free the node
+std::cout << bids.rbegin()->first << '\\n';       // Q3: best bid = largest key
+// 200 10001 9998
+// 10000""",
   "deck": "Deck W7 · slide 11"},
- {"title": "FIFO per level, and knowing your position in it",
-  "text": "Within one price, orders fill front-to-back by arrival, keyed on a monotonic sequence number. Your fill probability is set by how much size sits ahead of you, so queue_ahead is a number worth tracking: zero means you are at the front and about to trade. Repricing forfeits all of it — cancel and re-post puts you at the tail — which is why churning quotes is expensive even when sending is cheap.",
-  "code": """int ahead = 800, level = 1000;                // you rest behind 800 at 100.00
-ahead -= 300;                                 // 300 ahead of you filled: you advance
-std::printf("%d %d %s\\n", ahead, level, ahead ? "wait" : "FRONT");
-ahead = level;                                // cancel + re-post: BACK of the queue
-std::printf("%d\\n", ahead);
-// 500 1000 wait
-// 1000""",
-  "deck": "Deck W7 · slide 13"}
+ {"title": "std::unordered_map versus an open-addressing table",
+  "text": "Q1 (order id → order) is a hash lookup, O(1) on average either way; the constant is decided by layout. The standard requires that references to elements survive a rehash, which effectively mandates chaining: each element is a heap node on a bucket list, a collision is a pointer chase, and crossing the load factor rehashes everything in one O(n) spike. An open-addressing table stores the slots in one flat array: size it to a power of two so the index is key & mask, probe linearly to the next slot (same cache line), and mark erased slots as tombstones so a later probe does not stop early.",
+  "code": """std::unordered_map<uint64_t, int> chained; chained[42] = 7;
+int* p = &chained[42];                                        // a heap node per element
+for (uint64_t k = 0; k < 5000; ++k) chained[k + 100];         // several rehashes...
+struct Slot { uint64_t key; int val; uint8_t st; };           // 0 empty 1 full 2 tombstone
+std::array<Slot, 16> t{}; const uint64_t mask = 15;           // power of two: AND, not %
+auto find = [&](uint64_t k) {
+  for (uint64_t i = k & mask;; i = (i + 1) & mask) {          // linear probe
+    if (t[i].st == 0) return -1;                              // empty: stop
+    if (t[i].st == 1 && t[i].key == k) return t[i].val; } };  // tombstone: keep going
+t[1] = {1, 10, 1}; t[2] = {17, 20, 2}; t[3] = {33, 30, 1};    // 17 was erased
+std::cout << *p << ' ' << find(33) << ' ' << find(17) << '\\n';  // ...p still valid
+// 7 30 -1""",
+  "deck": "Deck W7 · slides 12–13"},
+ {"title": "std::priority_queue and make_heap: the best price in one load",
+  "text": "A binary heap is an array arranged so the largest element sits at index 0: top() answers Q3 with one load, and push and pop are O(log n) sift operations on contiguous memory. What a heap cannot do is erase an arbitrary element — and in a book, cancels are most of the traffic. The standard workaround is lazy deletion: mark the cancelled price as dead and discard stale entries only when they reach the top.",
+  "code": """std::priority_queue<int> best;                      // max-heap of bid prices (ticks)
+for (int px : {9998, 10000, 9999}) best.push(px);   // O(log n) each
+std::cout << best.top() << ' ';                     // Q3: one load
+std::vector<char> dead(10001, 0); dead[10000] = 1;  // cancel 10000: no erase(it) exists
+while (dead[best.top()]) best.pop();                // lazy deletion: drop stale tops
+std::cout << best.top() << ' ';
+std::vector<int> h{3, 1, 4, 1, 5}; std::make_heap(h.begin(), h.end());  // same, by hand
+std::cout << h.front() << '\\n';
+// 10000 9999 5""",
+  "deck": "Deck W7 · slide 14"},
+ {"title": "The flat book: a price-indexed vector<Level> and a cached best",
+  "text": "Prices sit on a tick grid, so (price − base) / tick is an exact integer: index a vector<Level> with it and Q2 is arithmetic, not a search. Cache the index of the best level and Q3 is one load; it moves only when a better price arrives or the best level empties (the one place you may scan inward). The array is a band starting at base, not all prices, so bounds-check both ends. Inside each level an intrusive FIFO — orders linked by index through a preallocated pool — gives price-time priority, and the size ahead of yours in that FIFO is your queue position.",
+  "code": """struct Order { uint64_t id; uint32_t qty; int next = -1; };    // intrusive FIFO link
+struct Level { uint64_t qty = 0; int head = -1, tail = -1; };
+const double base = 99.00, tick = 0.01; int best = -1;          // band [base, base+256 ticks)
+std::vector<Level> bid(256); std::vector<Order> pool; pool.reserve(1024);
+auto add = [&](double px, uint64_t id, uint32_t q) {
+  int i = int((px - base) / tick + 0.5), o = int(pool.size());  // Q2: arithmetic, O(1)
+  pool.push_back({id, q}); Level& L = bid[i]; L.qty += q;
+  (L.tail < 0 ? L.head : pool[L.tail].next) = o; L.tail = o;    // append at the FIFO tail
+  if (i > best) best = i; };                                    // Q3: cached best index
+add(100.00, 1, 300); add(100.00, 2, 200); add(99.99, 3, 50);
+std::printf("%.2f %llu %llu\\n", base + best * tick, (unsigned long long)bid[best].qty,
+            (unsigned long long)pool[bid[best].head].id);      // front of the queue
+// 100.00 500 1""",
+  "deck": "Deck W7 · slides 17–20"},
+ {"title": "Complexity that matters: count cache misses, and read the tail",
+  "text": "Big-O describes growth as n goes to infinity and hides the constant, and a hot book side is small. The constant is memory: a cache miss costs around 100 ns while a comparison costs about 1 ns, so count the cache lines you touch, not the instructions. Among 64 levels a tree lookup is about six scattered nodes, a linear scan is four contiguous lines the prefetcher streams, and the array wins below a crossover you measure on your machine. Amortized is not bounded either: the average push_back is cheap, but the worst one copies half a million elements, and the worst one is what p99.9 sees.",
+  "code": """const int n = 64;                                  // a hot book side is SMALL
+int tree_hops = int(std::ceil(std::log2(n)));      // rb-tree: ~log2(n) scattered nodes
+int scan_lines = n * int(sizeof(int)) / 64;        // array: n ints, contiguous
+std::printf("tree %d misses, scan %d lines | ", tree_hops, scan_lines);
+std::vector<int> v; long worst = 0;                // amortized is not bounded
+for (int i = 0; i < (1 << 20); ++i) { std::size_t c = v.capacity(); v.push_back(i);
+  if (v.capacity() != c) worst = long(v.size() - 1); }   // elements moved by that push
+std::printf("worst push moved %ld\\n", worst);
+// tree 6 misses, scan 4 lines | worst push moved 524288""",
+  "deck": "Deck W7 · slides 22–23"},
+ {"title": "Ring buffer + online statistics: O(1) per tick",
+  "text": "Signals need the recent past, not the whole tape. A fixed-capacity ring buffer is allocated once, never grows, and overwrites the oldest slot in O(1); it is the rolling window. Then fold each tick into a few scalars instead of looping the window: a running mean, Welford's numerically stable variance, and an EMA that needs no buffer at all. HW 8 (the rolling event counter, from the week08.md take-home lab) is this card with a time window and an unsigned clock — compute now − window only once now > window.",
+  "code": """template <class T, std::size_t N> struct Ring {                 // allocated once
+  std::array<T, N> buf{}; std::size_t head = 0, count = 0;
+  void push(T x) { buf[head] = x; head = (head + 1) % N; if (count < N) ++count; } };
+struct Online { long n = 0; double mean = 0, m2 = 0, ema = 0, a = 0.2;
+  void update(double x) { ++n; double d = x - mean; mean += d / n;   // Welford
+    m2 += d * (x - mean); ema = n == 1 ? x : a * x + (1 - a) * ema; }
+  double var() const { return n > 1 ? m2 / (n - 1) : 0.0; } };
+Ring<double, 4> r; Online o;
+for (double x : {2., 4., 4., 4., 5., 5., 7., 9.}) { r.push(x); o.update(x); }  // O(1)/tick
+std::printf("%zu %.2f %.4f %.4f\\n", r.count, o.mean, o.var(), o.ema);
+// 4 5.00 4.5714 5.2910""",
+  "deck": "Deck W7 · slides 24–25"}
 ],
 "hft": {
  "text": "Why this matters in HFT",
  "paragraphs": [
-  "The structure *is* the latency. A cache miss is around 100 ns and the arithmetic on a book update is a nanosecond or two, so the right layout is worth more than a cleverer algorithm. Your job this week is to mirror the exchange's book locally so that on_book can go decode → update → decide entirely in cache, with no allocation and no traversal.",
-  "The engine you are mirroring is a CLOB with price-time priority, and it keys each level's queue on a monotonic sequence number rather than a timestamp, so ties are impossible. That means your local model can be exact rather than approximate: the same add/cancel/match rules, the same FIFO per level.",
-  "Reading the touch has to be free. Cache best_bid and best_ask as indices and the top of book is a single load with zero search — that is the difference the p99.9 sees, because the touch is read on literally every tick while a cancel that empties a level is rare.",
-  "Queue awareness is the strategy payoff of the data structure. OrderAck carries queue_ahead and level_qty when your order rests, and QueueUpdate tells you when a fill or cancel ahead of you has advanced your standing. queue_ahead == 0 means you are about to fill — which is also exactly when adverse selection bites, the thread session 13 picks up.",
-  "Do not take any of this on faith: benchmark your flat book and your open-addressing map against std::map and std::unordered_map, and read the tail, not just the median. The std:: containers usually look acceptable on p50 and fall apart on p99.9, because that is where a rehash or a node allocation lands."
+  "The structure is the latency. The arithmetic of a book update is a nanosecond or two and a cache miss is around 100 ns, so the choice of container for each question decides your tick-to-trade more than any clever algorithm. This session's job is to mirror the exchange's book locally so that on_book goes decode → update → decide entirely in cache, with no allocation and no traversal.",
+  "Answer each question with the cheapest structure that answers it. Q1 (order id → order) goes in a pre-sized open-addressing table; Q2 (price → level) is an index into the flat vector<Level>; Q3 (best prices) is a cached index read with one load. std::map, std::list and std::priority_queue each answer one or two of the questions well and pay for it with a heap node per element or no arbitrary erase — which is why the flat book wins, and why you should still know exactly when a tree is the right answer (sparse prices, off the hot path).",
+  "The engine you are mirroring is a CLOB with price-time priority keyed on a monotonic sequence number, so your local model can be exact: the same add/cancel/match rules and the same FIFO per level. Queue awareness is the payoff: OrderAck carries queue_ahead and level_qty when your order rests, and QueueUpdate tells you when the size ahead of you has traded or cancelled.",
+  "Signals ride on the same discipline. on_book hands you microprice and obi already computed; anything you compute on top of them must be O(1) per tick — a ring buffer for the recent tape, Welford and an EMA for the statistics — because a windowed recompute is cheap most of the time and expensive exactly when the message rate spikes.",
+  "Two homeworks come out of tonight: HW 7 (a fast order book + a fast symbol map, built in the week07.md lab) is due Sat Oct 24, and HW 8 (the rolling event counter, the week08.md take-home lab) is due Sat Oct 31, both 11:59 PM ET. Project Phase 2 (the local order book) is due Wed Oct 28. Benchmark your flat book and your open-addressing map against std::map and std::unordered_map, and read the tail, not just the median."
  ],
  "example": {"title": "In the arena",
   "text": "course/hft-columbia/project-starter/include/order_book.hpp — the HW7 stub, including the band warning that CI will not catch for you.",
@@ -191,26 +251,26 @@ struct Book {
 },
 "interview": [
  {"q": "Why is std::unordered_map a risky choice on a latency-critical path?",
-  "a": "It is specified with chaining, so buckets are linked lists of separately allocated nodes: a lookup that collides becomes a pointer chase across the heap, and each hop is a likely cache miss. It also allocates a node per insert and rehashes when the load factor is exceeded, which is an O(n) event that lands whenever it lands. Average O(1) is true and irrelevant — the tail is what the venue's busy tick sees.",
+  "a": "The standard requires references to elements to survive a rehash, which effectively mandates chaining: buckets are linked lists of separately allocated nodes, so a lookup that collides becomes a pointer chase across the heap, and each hop is a likely cache miss. It also allocates a node per insert and rehashes when the load factor is exceeded, which is an O(n) event that lands whenever it lands. Average O(1) is true and irrelevant — the tail is what the venue's busy tick sees.",
   "level": "warm-up", "skill": "cpp.stl-containers"},
- {"q": "Why size an open-addressing hash table to a power of two?",
-  "a": "So the modulo becomes a bitwise AND with size - 1, replacing a division (tens of cycles) with a single-cycle instruction on the hottest line of the probe loop. It also makes wrap-around free: i = (i + 1) & mask. The discipline that goes with it is to reserve up front and keep the load factor below roughly 0.7, because probe chains lengthen sharply after that.",
-  "level": "warm-up", "skill": "perf.open-addressing-hash"},
+ {"q": "What does “amortized O(1)” mean for vector::push_back, and why might that not be good enough?",
+  "a": "Most pushes are a single store; when capacity is exhausted the vector allocates a larger buffer and moves every element, which is O(n), and averaging that over the whole sequence gives constant cost per push. It is not good enough on a latency path because you are graded on the worst operation, not the average: that one reallocation is an allocation plus an O(n) copy landing on an arbitrary tick. reserve() the capacity up front and the spikes disappear.",
+  "level": "warm-up", "skill": "perf.amortized-reserve"},
  {"q": "Why can a flat price-indexed array beat a std::map for an order book even though the map is O(log n)?",
   "a": "Because prices are discrete: they sit on a tick grid, so (price - base) / tick is an exact integer index and the lookup is arithmetic instead of a search. The map's six or so pointer hops are six likely cache misses at ~100 ns each; the array is one indexed load into a line the prefetcher probably already fetched. Add and cancel become O(1), the touch is a cached index, and matching walks adjacent slots sequentially.",
   "level": "core", "skill": "trading.flat-order-book"},
  {"q": "What is the main hazard of the flat-array book, and how do you handle it?",
   "a": "It covers a price *band*, not all prices, so any price outside the band indexes out of range — and if the two sides are adjacent arrays in one struct, the overflow corrupts your other side rather than segfaulting, which sanitizers will not catch because it is an intra-object overflow. You index relative to a base tick, bounds-check both ends explicitly, and decide a policy for out-of-band prices (re-base the window, or reject and log). Never rely on the test data staying near the middle of the band.",
   "level": "core", "skill": "trading.flat-order-book"},
- {"q": "Which operations on a flat book are O(1), and which one is not?",
-  "a": "Add is O(1): index the level, bump the aggregate quantity, and update the cached best index if the price improves the touch. Cancel is O(1) in the body — index and subtract — but if the level empties *and* it was the touch, you must scan inward to find the next non-empty slot, which is O(levels) in the worst case. That is the accepted exception: it is rare, it is sequential and cache-friendly, and the alternative (a heap or tree of non-empty levels) makes the common path slower to speed up the rare one.",
-  "level": "core", "skill": "trading.flat-order-book"},
+ {"q": "Why not keep the best bid in a std::priority_queue?",
+  "a": "top() is a single load, which is exactly what Q3 wants, and push is O(log n) on contiguous memory. The problem is cancels: a heap has no way to erase an arbitrary element, and in a real book most messages are cancels. You either rebuild the heap (O(n)) or use lazy deletion — mark the price dead and pop stale entries when they surface — which lets the heap grow with garbage and moves the cost onto whichever tick pops it. A flat book with a cached best index answers Q3 in one load and handles cancels in O(1), scanning inward only when the best level empties.",
+  "level": "core", "skill": "cpp.stl-containers"},
  {"q": "How do you track your own queue position, and why does it matter?",
   "a": "Per price level the exchange holds a FIFO keyed on a monotonic sequence number, so your position is the total remaining size of orders that arrived before yours. In the arena that is handed to you: OrderAck carries queue_ahead and level_qty when your order rests, and QueueUpdate fires when something ahead of you fills or cancels. It matters because fill probability is a function of the size in front of you — and because repricing resets it to the back, so a quote adjustment has a real, measurable cost.",
   "level": "core", "skill": "trading.queue-position"},
- {"q": "Where would you still use std::map or a tree in a trading system?",
-  "a": "Off the tick path, where ordered iteration or an unbounded key range is what you actually need: end-of-day reconciliation, a sparse book for an illiquid instrument whose prices span decades of ticks, a schedule of timers keyed by time, or anything whose size you cannot bound at startup. The rule I apply is that the hot path gets bounded, pre-sized, contiguous structures, and everything that is allowed to take a microsecond can use the container with the nicest semantics.",
-  "level": "senior", "skill": "cpp.stl-containers"},
+ {"q": "A sliding-window counter is given an unsigned nanosecond clock and a window. Where is the bug most people write?",
+  "a": "In computing the cutoff as now_ns - window_ns unconditionally. Both are unsigned, so while now_ns is still smaller than the window that subtraction wraps to an enormous value and the counter expires every event it holds — and there is no unsigned value that represents the negative cutoff, so clamping is not a fix either. The correct structure is to only compute and apply the cutoff when now_ns > window_ns, and expire nothing before that point.",
+  "level": "core", "skill": "cpp.ring-buffer"},
  {"q": "Your local book occasionally disagrees with the venue's. How do you find out why?",
   "a": "First decide whether you lost an update or misapplied one, because the fixes are different. Sequence numbers answer the first: track the next-expected value and treat a gap as loss, stop trading that symbol, and recover by re-requesting a snapshot rather than guessing. If there is no gap, the bug is in application, so I replay the recorded tape through the book with a shadow implementation — a simple, slow, obviously-correct map-based book — and diff the two after every message to find the first divergence. Silent staleness is the dangerous failure mode, so the book should refuse to trade rather than trade a state it cannot vouch for.",
   "level": "senior", "skill": "trading.feed-sequencing"}
@@ -218,115 +278,9 @@ struct Book {
 })
 
 # ===================== SESSION 7 =====================
+# Re-schedule 2026-10-14: Concurrency I (w9) moves to Oct 21 as a full session.
 S.append({
 "n": 7,
-"focus": "Algorithmic complexity & the cache",
-"tagline": "Big-O tells you how cost grows and hides the constant — so count cache misses, and update instead of recomputing.",
-"concepts": [
- {"title": "Big-O is asymptotic; the constant is your grade",
-  "text": "O(1), O(log n) and O(n) describe growth as n goes to infinity and say nothing about the constant that dominates when n is small — and a hot book is small. At HFT scale the operation that costs is the cache miss at roughly 100 ns, not the arithmetic at roughly 1 ns, so the honest unit of complexity is memory accesses rather than instructions.",
-  "deck": "Deck W8 · slide 5"},
- {"title": "Why a “slower” array beats a “faster” tree",
-  "text": "Finding a value among 64 elements: a red-black tree is O(log n), about six pointer hops, each a likely cache miss — call it 600 ns. A linear scan of 64 contiguous elements is O(n) but touches roughly eight cache lines, is prefetched, and predicts perfectly — tens of nanoseconds. The log-n win never pays off at that size, and the crossover N is something you measure on your machine rather than assume.",
-  "deck": "Deck W8 · slide 6"},
- {"title": "Amortized is not worst case",
-  "text": "vector::push_back is O(1) amortized: most pushes are a store, and occasionally the vector reallocates and copies everything, O(n). Averaged over many operations that is constant; but p99.9 lives in the worst case, and one reallocation mid-race is the tail. reserve() up front converts a handful of O(n) spikes into zero.",
-  "code": """std::vector<int> grow, pre; pre.reserve(1000);
-auto count = [](std::vector<int>& v) {
-  std::size_t n = 0, cap = v.capacity();
-  for (int i = 0; i < 1000; ++i) { v.push_back(i);
-    if (v.capacity() != cap) { ++n; cap = v.capacity(); } }
-  return n;                                    // how many O(n) reallocations
-};
-std::cout << count(grow) << ' ' << count(pre) << '\\n';
-// 11 0     -- eleven copy-everything events, or none""",
-  "deck": "Deck W8 · slide 5"},
- {"title": "The ring buffer: fixed-capacity history",
-  "text": "A market feed is an unbounded stream but you only need the recent past, so store it in a fixed-size circular array: allocated once, never grows, O(1) push that overwrites the oldest slot, and contiguous storage the cache likes. The ring *is* the rolling window — the only remaining question is how you compute over it as it slides.",
-  "code": """template <class T, std::size_t N> struct Ring {
-  std::array<T, N> buf{}; std::size_t head = 0, count = 0;
-  void push(T x) { buf[head] = x; head = (head + 1) % N;    // O(1), no alloc
-                   if (count < N) ++count; }
-  T operator[](std::size_t i) const { return buf[(head - count + i + N) % N]; }
-};
-Ring<int, 4> r; for (int i = 1; i <= 6; ++i) r.push(i);     // 1 and 2 overwritten
-std::cout << r.count << ' ' << r[0] << ' ' << r[3] << '\\n'; // 0 = oldest
-// 4 3 6""",
-  "deck": "Deck W8 · slide 9"},
- {"title": "Update, don't recompute",
-  "text": "Looping the whole window every tick to get a mean or a standard deviation is O(k) work you repeat needlessly — and O(k) per tick across millions of ticks, spiking during the volatile moments, is a blown tail. An online algorithm folds each new observation into a few scalars in constant time: a running mean, Welford's numerically stable variance, and an EMA that needs no buffer at all.",
-  "code": """struct Online {                                    // O(1) time, O(1) space
-  long n = 0; double mean = 0, m2 = 0, ema = 0, a = 0.2;
-  void update(double x) { ++n; double d = x - mean;
-    mean += d / n;                                 // running mean
-    m2   += d * (x - mean);                        // Welford's M2
-    ema   = (n == 1) ? x : a * x + (1 - a) * ema; }
-  double var() const { return n > 1 ? m2 / (n - 1) : 0.0; }
-};
-Online o; for (double x : {2., 4., 4., 4., 5., 5., 7., 9.}) o.update(x);
-std::printf("%ld %.2f %.4f %.4f\\n", o.n, o.mean, o.var(), o.ema);
-// 8 5.00 4.5714 5.2910""",
-  "deck": "Deck W8 · slides 12–13"},
- {"title": "The optimisations that actually move p99.9",
-  "text": "They are structural, not micro-tweaks to arithmetic: prefer flat arrays to node-based containers for hot, small collections; reserve and pool up front so nothing allocates mid-tick; do less work by updating incrementally, exiting early and hoisting invariants out of the loop; and profile to find the real hot path before touching anything. Then re-measure the tail, because that is the number you are optimising.",
-  "deck": "Deck W8 · slide 7"}
-],
-"hft": {
- "text": "Why this matters in HFT",
- "paragraphs": [
-  "on_book hands you microprice and obi already computed, which makes the trade-off explicit: signal inputs are free, but every microsecond you spend computing on them costs queue position. An incremental estimator costs the same tiny amount on every tick; a windowed recompute costs nothing most of the time and blows out exactly when volatility raises the message rate.",
-  "So the shape of a hot-path signal is fixed: ring-buffer the recent tape (allocated once, overwritten in place), fold each tick into scalar online state, and act on the result. A z-score against an EMA and a Welford standard deviation is a few multiply-adds on cache-resident data — no window loop, no allocation, and a flat cost distribution.",
-  "The complexity you should be counting is cache misses. An insert into a node-based map is O(log n) hops that each risk 100 ns; the same insert into a pre-sized flat array is one line. That is why session 6's book is flat and why this session insists you redo the complexity analysis of your own add/cancel/match in memory terms, not instruction counts.",
-  "There is a deliberate bug on the week-8 slide worth internalising: keying per-symbol state on a std::string hashes the string and chases a node on every tick. The fix is session 6's SymMap — map the symbol to a small integer once, then index flat arrays. Strings on the hot path are a latency decision disguised as convenience.",
-  "The starter's RollingCounter is where the theory gets sharp edges: count() takes an unsigned clock, so early on now_ns <= window_ns and the mathematical cutoff now - window is negative, with no uint64_t value that means that and nothing safe to clamp to. Only compute the subtraction when it is meaningful. Correctness under an edge case and O(1) amortized behaviour are both part of the grade."
- ],
- "example": {"title": "In the arena",
-  "text": "course/hft-columbia/project-starter/include/rolling_counter.hpp — HW8's sliding-window counter, including the unsigned-clock edge case that costs most people a test.",
-  "code": """// project-starter/include/rolling_counter.hpp
-// HW8 - sliding-window event counter. count() is called with a
-//       non-decreasing clock.
-//
-// Edge case (see labs/week08.md step 5): ts_ns and now_ns are UNSIGNED. Early
-// on, now_ns <= window_ns and the mathematical cutoff (now - window) is
-// negative - there is no uint64_t that means that, and no safe value to clamp
-// to. Only compute the subtraction when it is meaningful.
-struct RollingCounter {
-    explicit RollingCounter(uint64_t window_ns);   // ring/deque; amortized O(1)
-    void add(uint64_t ts_ns);
-    uint64_t count(uint64_t now_ns);   // events with ts > now - window
-};"""}
-},
-"interview": [
- {"q": "What does “amortized O(1)” mean for vector::push_back, and why might that not be good enough?",
-  "a": "Most pushes are a single store; when capacity is exhausted the vector allocates a larger buffer and moves every element, which is O(n), and averaging that over the whole sequence gives constant cost per push. It is not good enough on a latency path because you are graded on the worst operation, not the average: that one reallocation is an allocation plus an O(n) copy landing on an arbitrary tick. reserve() the capacity up front and the spikes disappear.",
-  "level": "warm-up", "skill": "perf.amortized-reserve"},
- {"q": "Give the recurrence for an exponential moving average and say why it is attractive on a hot path.",
-  "a": "ema = alpha * x + (1 - alpha) * ema, with alpha in (0,1] setting how fast old observations decay. It is one multiply-add, it needs O(1) state and no history buffer at all, and there is no window boundary to handle. So the cost is identical on every tick — which is exactly the property a tail-sensitive path wants, unlike a windowed mean whose cost depends on the window.",
-  "level": "warm-up", "skill": "perf.incremental-computation"},
- {"q": "A linear scan of a 64-element array beats a balanced tree lookup on the same data. Explain why, and say how you would find the crossover.",
-  "a": "The tree is O(log n) — about six comparisons — but each step dereferences a separately allocated node, so it is six probable cache misses at ~100 ns, and the branch on each comparison is data-dependent and mispredicts. The array scan is O(n) in comparisons but touches only about eight 64-byte lines, the prefetcher streams ahead of it, and the loop branch predicts almost perfectly. To find the crossover I would measure both on the real element type across a range of n on the target machine and report percentiles — it is a hardware property, not a theorem.",
-  "level": "core", "skill": "perf.complexity-in-cache-terms"},
- {"q": "Why is Welford's algorithm preferred over accumulating sum and sum-of-squares?",
-  "a": "The naive formula computes variance as E[x²] - E[x]², and when the mean is large relative to the spread those two terms are nearly equal, so subtracting them cancels most of the significant digits — you can even get a negative variance. Welford updates the mean and a running M2 term using the deviation from the current mean, so no large-magnitude cancellation occurs. It is still a single pass, O(1) per observation and O(1) state.",
-  "level": "core", "skill": "perf.incremental-computation"},
- {"q": "How would you maintain a rolling maximum over the last k ticks in better than O(k) per tick?",
-  "a": "With a monotonic deque of indices: before pushing a new element, pop from the back every element smaller than it (they can never be the max again), then pop from the front anything that has fallen out of the window. The front is always the current maximum, and because each element is pushed and popped at most once the cost is amortized O(1) per tick. Rolling sum and mean are easier still — add the entering value and subtract the leaving one.",
-  "level": "core", "skill": "perf.incremental-computation"},
- {"q": "A sliding-window counter is given an unsigned nanosecond clock and a window. Where is the bug most people write?",
-  "a": "In computing the cutoff as now_ns - window_ns unconditionally. Both are unsigned, so while now_ns is still smaller than the window that subtraction wraps to an enormous value and the counter expires every event it holds — and there is no unsigned value that represents the negative cutoff, so clamping is not a fix either. The correct structure is to only compute and apply the cutoff when now_ns > window_ns, and expire nothing before that point.",
-  "level": "core", "skill": "cpp.ring-buffer"},
- {"q": "Your per-tick signal is O(1) and the p50 is excellent, but p99.9 is ten times p50. Where do you look?",
-  "a": "O(1) arithmetic cannot produce that spread, so the cost is not in the algorithm — it is something rare and expensive on the same path. The usual suspects, in order: an allocation or container growth I did not notice, a first-touch page fault on state that is only used occasionally, a std::string or map lookup keyed on a symbol, and the OS preempting the thread. I would reproduce it on a fixed recorded tape so it is deterministic, then use the profiler and fault/miss counters rather than reasoning, and accept the fix only if p99.9 moves on that same tape.",
-  "level": "senior", "skill": "perf.tail-diagnosis"},
- {"q": "When is it worth giving up an O(1) incremental estimator for a windowed recompute?",
-  "a": "When the incremental form is not numerically or semantically equivalent to what you actually want. An EMA never forgets an outlier completely, a running variance over the whole session is not the variance of the last 200 ticks, and an incremental median does not exist in constant state. If the strategy genuinely needs an exact windowed quantile, the honest answer is to compute it off the hot path on a second thread and let on_book read the last published value — you keep the tight tail and pay for the statistic in staleness rather than in latency.",
-  "level": "senior", "skill": "trading.obi-signal"}
-]
-})
-
-# ===================== SESSION 8 =====================
-S.append({
-"n": 8,
 "focus": "Atomics & memory models",
 "tagline": "Two threads, one address space: reason about what one thread's writes another can see — and keep locks off the path that decides your p99.9.",
 "concepts": [
@@ -417,6 +371,57 @@ private:
 ]
 })
 
+# ===================== SESSION 8 =====================
+# Re-schedule 2026-10-14: Oct 28 is the midterm only (2h20 in class, no lecture, no new skills).
+S.append({
+"n": 8,
+"focus": "Midterm: revise sessions 1–6",
+"tagline": "Wed Oct 28 is the 2h20 in-class midterm and nothing else — no lecture, no lab, no new skills. It covers sessions 1–6 (decks w1–w8); Concurrency I (session 7) is not on it.",
+"concepts": [
+ {"title": "Pointers, references & memory layout (session 2)",
+  "text": "Be able to read and write pointer arithmetic (p + 1 moves one element), say when a pointer and when a const& is the right parameter, explain one-past-the-end and why an array decays and forgets its length, and argue for a contiguous or SoA layout in cache-line terms — including false sharing on a 64-byte line. Revise the session 2 checklist, lab week02.md and HW 2."},
+ {"title": "Allocation, RAII & smart pointers (session 3)",
+  "text": "Be able to pair every allocation with its release, write a class whose constructor establishes an invariant and whose destructor releases what it owns, apply the rule of zero or write the rule of five by hand, say what std::move actually does, choose unique_ptr by default and shared_ptr only for real shared ownership, and predict sizeof and padding from member order. Revise session 3, lab week03.md and HW 3."},
+ {"title": "Pools, placement new & virtual dispatch (session 4)",
+  "text": "Be able to explain why the general allocator is non-deterministic, implement a fixed-size pool whose free slots hold the free list, construct with placement new and destroy explicitly, describe an arena / std::pmr resource, and price a virtual call: the vptr, two dependent loads, an indirect branch and the inlining you lose. Revise session 4, lab week04.md and HW 4."},
+ {"title": "Templates, CRTP & compile-time work (session 5)",
+  "text": "Be able to write function and class templates, expand a parameter pack with a fold, branch at compile time with type traits, if constexpr or a concept, move work into constexpr and check it with static_assert, and replace a virtual interface with CRTP or a policy class so the call inlines. Revise session 5, lab week05.md (Parts A and B) and HW 5 / HW 6."},
+ {"title": "Containers for the order book (session 6)",
+  "text": "Be able to say which container answers each order-book question — Q1 order by id, Q2 level by price, Q3 best prices — and at what cost: vector and its reallocation, list and stable iterators, map/set as a red-black tree of nodes, unordered_map chaining versus open addressing with tombstones, priority_queue and lazy deletion, and the flat price-indexed vector<Level> with a cached best and an intrusive FIFO per level. Revise session 6, lab week07.md and HW 7."},
+ {"title": "Complexity, amortized cost & online statistics (session 6)",
+  "text": "Be able to argue cost in cache misses rather than instructions, explain why a linear scan of a small array beats a tree, distinguish amortized from bounded (reserve() removes the reallocation spike), implement a ring buffer, and fold a tick into a running mean, Welford variance and EMA in O(1). Revise the week08.md take-home lab and HW 8 (the rolling counter, due Sat Oct 31)."}
+],
+"hft": {
+ "text": "Why this matters in HFT",
+ "paragraphs": [
+  "There is no lecture tonight: the whole session is the midterm, 2h20 in class. It covers sessions 1–6 (decks w1–w8) — pointers and layout, ownership and RAII, allocators and virtual dispatch, templates and CRTP, and the data-structures and complexity session. Concurrency I (atomics and memory models, session 7) is not on the midterm; it is on the final.",
+  "Revise the way the exam asks: from the code and the cost, not from definitions. For each session, go back to its checklist on this site and make sure every “You can…” is true without notes, redo the in-class lab from a clean checkout, and answer the interview questions on each session page before opening the model answers. If you can predict what a snippet prints and say what it costs in cache misses, you are ready.",
+  "The same discipline the course grades in your bot is what the questions test: no allocation on the hot path, contiguous data, the right container for each question, compile-time work instead of run-time work, and the tail rather than the mean. Every topic on the midterm reappears in the project and in the final, so revision tonight is not wasted after the exam.",
+  "Deadlines around the exam: Project Phase 2 (the local order book) is due tonight, Wed Oct 28, 11:59 PM ET; HW 8 (rolling event counter) and HW 9 (the seqlock from session 7) are due Sat Oct 31, 11:59 PM ET. The course resumes with Concurrency II — lock-free pipelines — on Wed Nov 4."
+ ]
+},
+"interview": [
+ {"q": "What does p + 1 do when p is an int*, and what does it do when p is a char*?",
+  "a": "It advances by one element, not one byte: for an int* the address grows by sizeof(int), typically 4, and for a char* by exactly 1. Pointer arithmetic is scaled by the pointee type, which is why p[i] and *(p + i) are the same expression. It is only defined inside one array, plus the one-past-the-end position, which you may form and compare but not dereference.",
+  "level": "warm-up", "skill": "cpp.pointers"},
+ {"q": "When do you have to write the rule of five yourself, and what is the rule of zero?",
+  "a": "When the class directly owns a resource that the compiler-generated members would handle wrongly — a raw pointer to a heap buffer, a file descriptor — so a memberwise copy would double-free or leak. Then destructor, copy constructor, copy assignment, move constructor and move assignment must agree on ownership. The rule of zero is the better default: hold resources in members that already manage themselves (unique_ptr, vector, a RAII handle), declare none of the five, and the generated ones are correct.",
+  "level": "core", "skill": "cpp.rule-of-five"},
+ {"q": "Why is a fixed-size object pool faster and more predictable than new/delete on the hot path?",
+  "a": "The pool's memory is reserved once, up front, and its free slots double as a singly linked free list, so allocation pops the head and free pushes it back: two or three loads and stores, no lock, no system call, no search for a fitting block. The general allocator has to handle any size from any thread, so its fast path is good but its slow path (refilling a cache, coalescing, asking the OS for pages) lands at unpredictable moments — which is what the tail sees.",
+  "level": "core", "skill": "perf.object-pool"},
+ {"q": "What does CRTP buy you over a virtual interface, and what does it cost?",
+  "a": "The base class template is parameterised on the derived class, so it can static_cast this to Derived and call the implementation directly: the call is resolved at compile time and can be inlined, with no vptr in the object and no indirect branch. The cost is that the set of types is fixed at compile time — there is no heterogeneous container of Base<?> — and every instantiation is separate code, so you trade run-time flexibility and some binary size for speed on the path you know statically.",
+  "level": "core", "skill": "cpp.crtp-policies"},
+ {"q": "Which container would you use for each of the three order-book questions, and why?",
+  "a": "Q1, order id to order: a pre-sized open-addressing hash table, O(1) with probes that stay in one flat array. Q2, price to level: an index into a flat vector<Level>, (price - base) / tick, which is arithmetic rather than a search. Q3, best prices: a cached index of the best level, read with one load and moved only when a better price arrives or the best level empties. A std::map answers Q2 and Q3 but pays a heap node and a likely cache miss per level; a heap answers Q3 but cannot erase a cancelled price.",
+  "level": "core", "skill": "trading.flat-order-book"},
+ {"q": "An algorithm is O(1) amortized and O(n) in the worst case. When is that acceptable on a latency path?",
+  "a": "Only when the worst case is moved off the path or removed. vector::push_back is the standard example: the average push is a store, but the one that reallocates copies everything, and it lands on whichever tick happens to cross the capacity. reserve() up front makes the worst case never happen during trading, and a rehashing hash table gets the same treatment by sizing it at startup. If neither is possible, the amortized structure belongs on a background thread, because p99.9 is decided by the worst operation, not the average.",
+  "level": "senior", "skill": "perf.amortized-reserve"}
+]
+})
+
 # ===================== SESSION 9 =====================
 S.append({
 "n": 9,
@@ -465,7 +470,7 @@ std::cout << v.load() << ' ' << tries << ' ' << ok << ' ' << stale << '\\n';
 "hft": {
  "text": "Why this matters in HFT",
  "paragraphs": [
-  "The producer and consumer already exist in your bot. IXWebSocket's background receive thread decodes each inbound frame; your strategy runs in on_book. Session 8 made a single-slot handoff correct; this session makes it a queue, so a burst of updates does not have to be consumed at exactly the rate it arrives — with no lock anywhere on the path.",
+  "The producer and consumer already exist in your bot. IXWebSocket's background receive thread decodes each inbound frame; your strategy runs in on_book. Session 7 made a single-slot handoff correct; this session makes it a queue, so a burst of updates does not have to be consumed at exactly the rate it arrives — with no lock anywhere on the path.",
   "SPSC is chosen deliberately, not for simplicity. With one writer per index there is no contention on either index and therefore no CAS, so push and pop are a relaxed load, an acquire load, a store to the slot and a release store. MPSC needs CAS on the producer side, and you should pay for that only when you genuinely have several writers.",
   "Bounded capacity is what protects the tail under a storm. Some scenarios deliberately spike the message rate, and a fixed ring with a coalescing policy holds its percentiles as the rate climbs, while a lock or an unbounded queue converts the storm into head-of-line blocking and a p99.9 blowup. Note also that for book data, dropping is usually *better* than queueing: an old snapshot has no value once a newer one exists.",
   "This is also where the shared-memory version appears in the project. Phase 4's ShmRing is the same structure with one extra constraint — it lives entirely in a shared-memory region and must contain no pointers, so it is a POD of atomics plus a fixed array, initialised once by the creator before fork. That is the machinery session 13 uses to let two per-venue processes see one touch cache.",

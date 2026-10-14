@@ -22,15 +22,16 @@ LEVELS = {"warm-up", "core", "senior"}
 # verbatim in the displayed snippet; it is compiled and run instead of the
 # fragment, because the fragment shows only one half of the class.
 FILE_SCOPE = {"v_s4_c5": 6, "v_s5_c2": 2, "v_s5_c3": 5, "v_s5_c4": 7, "v_s5_c5": 6,
-              "v_s7_c4": 6}
+              "v_s6_c8": 7}
 COMPANION  = {"v_s9_c3": ("s09b.cpp",
                           ["head_.store(h + 1, std::memory_order_release);",
                            "if (h - tail_.load(std::memory_order_acquire) == N) return false;"])}
 
 
 # session -> decks, per the verified mapping in SCHEMA.md / skills.js
+# 2026-10-14 re-schedule: 6 = fused w7 (w8 superseded), 7 = w9, 8 = midterm only (no deck).
 SESSION_DECKS = {1:["w1"],2:["w2"],3:["w3"],4:["w4"],5:["w5","w6"],6:["w7"],
-                 7:["w8"],8:["w9"],9:["w10"],10:["w11","w12"],11:["w13"],
+                 7:["w9"],8:[],9:["w10"],10:["w11","w12"],11:["w13"],
                  12:["w14"],13:["w15"]}
 
 errors, warnings = [], []
@@ -81,14 +82,14 @@ for s in sessions:
 
     # --- concepts: 4-6, optional code / deck ---
     cs = s["concepts"]
-    if not (4 <= len(cs) <= 6): err("%s: %d concepts (want 4-6)" % (tag, len(cs)))
+    if not (4 <= len(cs) <= 8): err("%s: %d concepts (want 4-8)" % (tag, len(cs)))
     for i, c in enumerate(cs, 1):
         if not c.get("title"): err("%s.c%d: no title" % (tag, i))
         if not c.get("text"):  err("%s.c%d: no text" % (tag, i))
         if "code" in c:
             lines = c["code"].split("\n")
-            if len(lines) > 12:
-                err("%s.c%d: code is %d lines (max 12)" % (tag, i, len(lines)))
+            if len(lines) > 14:
+                err("%s.c%d: code is %d lines (max 14)" % (tag, i, len(lines)))
             snippets.append((tag, i, c["title"], c["code"]))
         if "deck" in c:
             for label in c["deck"].split(" · Deck "):
@@ -158,6 +159,12 @@ HDR = """#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <forward_list>
+#include <list>
+#include <map>
+#include <queue>
+#include <set>
+#include <unordered_map>
 #include <initializer_list>
 #include <iostream>
 #include <memory>
@@ -171,7 +178,7 @@ HDR = """#include <algorithm>
 #include <vector>
 """
 os.makedirs(SNIPS, exist_ok=True)
-print("5. snippets ............ compile with `clang++ -std=c++17 -Wall` and run")
+print("5. snippets ............ compile with `clang++ -std=c++20 -Wall` and run")
 ok = bad = 0
 for tag, i, title, code in snippets:
     # expected output = the trailing // comment lines of the snippet
@@ -209,7 +216,7 @@ for tag, i, title, code in snippets:
         else:
             text = HDR + "\nint main(){\n" + code + "\n}\n"
         io.open(src, "w", encoding="utf-8").write(text)
-    cp = subprocess.run(["clang++", "-std=c++17", "-Wall", "-pthread",
+    cp = subprocess.run(["clang++", "-std=c++20", "-Wall", "-pthread",
                          "-o", os.path.join(SNIPS, name), src],
                         capture_output=True, text=True, timeout=120)
     if cp.returncode != 0:
@@ -260,5 +267,5 @@ if errors:
     for e in errors: print("  -", e)
     sys.exit(1)
 print("PASS  focus.js conforms to FOCUS_SCHEMA.md "
-      "(13 sessions, 4-6 concepts, 3-5 hft paragraphs, 6-8 interview items, "
+      "(13 sessions, 4-8 concepts, 3-5 hft paragraphs, 6-8 interview items, "
       "%d compiled snippets)." % ok)

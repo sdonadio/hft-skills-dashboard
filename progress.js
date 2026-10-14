@@ -19,9 +19,9 @@
     { n: 3, d: "2026-09-23", s: "Memory & RAII", t: "Memory management, classes/RAII & smart pointers" },
     { n: 4, d: "2026-09-30", s: "Allocators", t: "Custom allocators & memory pools + runtime polymorphism" },
     { n: 5, d: "2026-10-07", s: "Templates", t: "Templates & generic programming + compile-time, policy-based design & CRTP" },
-    { n: 6, d: "2026-10-14", s: "Order book", t: "The order book" },
-    { n: 7, d: "2026-10-21", s: "Complexity", t: "Complexity & time-series" },
-    { n: 8, d: "2026-10-28", s: "Midterm + atomics", t: "Midterm + Concurrency I (atomics & memory models)", tag: "Midterm" },
+    { n: 6, d: "2026-10-14", s: "Order book", t: "Data structures for the order book, from vector to the flat book (+ complexity & time-series)" },
+    { n: 7, d: "2026-10-21", s: "Atomics", t: "Concurrency I (atomics & memory models)" },
+    { n: 8, d: "2026-10-28", s: "Midterm", t: "Midterm (in class, 2h20, no lecture; covers sessions 1–6)", tag: "Midterm" },
     { n: 9, d: "2026-11-04", s: "Lock-free", t: "Lock-free pipelines" },
     { n: 10, d: "2026-11-11", s: "Network & I/O", t: "Network protocols & market data + async I/O & serialization" },
     { n: 11, d: "2026-11-18", s: "SIMD & colo", t: "SIMD, kernel bypass & colocation" },
@@ -105,7 +105,7 @@
     }
   };
 
-  /* ── agenda cards (hard-coded for sessions 4 and 5, the re-arranged ones) ─ */
+  /* ── agenda cards (hard-coded for the re-arranged sessions 4, 5 and 6) ─ */
   var AGENDA = {
     4: {
       title: "Custom allocators & memory pools + runtime polymorphism",
@@ -128,6 +128,18 @@
       ],
       hw: "HW 5 and HW 6 (due Sat Oct 17)",
       recap: "Polymorphism without the vtable."
+    },
+    6: {
+      title: "Data structures for HFT: the order book, from vector to the flat book",
+      items: [
+        ["Three questions", "Q1 an order by id, Q2 a level by price, Q3 the best prices: every container is judged on these."],
+        ["The STL candidates", "vector, list/forward_list, map/set, unordered_map vs open addressing, priority_queue: what each answers and what it costs."],
+        ["The flat book", "A price-indexed vector<Level>, (price - base) / tick, a cached best index, and an intrusive FIFO per level for queue position."],
+        ["Complexity that matters", "Count cache misses, not instructions; amortized is not bounded; ring buffers and Welford/EMA at O(1) per tick."],
+        ["Lab", "week07.md in class (the HW 7 book + SymMap); week08.md is the take-home (the HW 8 rolling counter)."]
+      ],
+      hw: "HW 7 (due Sat Oct 24) and HW 8 (due Sat Oct 31)",
+      recap: "Weeks 7 and 8 in one session: the order book and the cost of every structure in it."
     }
   };
 
@@ -137,8 +149,8 @@
     { r: [3, 3], t: "Memory & ownership", f: "RAII and smart pointers make lifetimes a contract; the hot path learns to allocate nothing." },
     { r: [4, 4], t: "Allocators + runtime polymorphism", f: "Pre-allocated pools replace the heap; virtual dispatch is understood and priced." },
     { r: [5, 5], t: "Templates, compile-time & CRTP", f: "Static dispatch and compile-time work: abstraction with no vtable and no runtime cost." },
-    { r: [6, 7], t: "Order book & complexity", f: "A cache-friendly local book and the right data structure per operation." },
-    { r: [8, 9], t: "Concurrency & lock-free", f: "Atomics, memory models and SPSC rings: threads without locks." },
+    { r: [6, 6], t: "Order book & complexity", f: "A cache-friendly local book and the right data structure per operation." },
+    { r: [7, 9], t: "Concurrency & lock-free (midterm on 8)", f: "Atomics, memory models and SPSC rings: threads without locks." },
     { r: [10, 11], t: "Network, SIMD & kernel bypass", f: "Wire formats, async I/O, vectorisation and colocation: the last microseconds." },
     { r: [12, 13], t: "Profiling, the tail & the tournament", f: "Find and kill the tail; race other venues and other teams." }
   ];
@@ -167,7 +179,10 @@
     { d: "2026-10-17", t: "HW 5: Generic programming with the STL", k: "Homework" },
     { d: "2026-10-17", t: "HW 6: CRTP & compile-time computation", k: "Homework" },
     { d: "2026-10-24", t: "HW 7: Fast order book + symbol map", k: "Homework" },
-    { d: "2026-10-28", t: "Midterm (in class; covers sessions 1–7)", k: "Exam", cls: true }
+    { d: "2026-10-28", t: "Midterm (in class, no lecture; covers sessions 1–6)", k: "Exam", cls: true },
+    { d: "2026-10-28", t: "Project Phase 2: The Local Order Book", k: "Project" },
+    { d: "2026-10-31", t: "HW 8: Rolling event counter (sliding window)", k: "Homework" },
+    { d: "2026-10-31", t: "HW 9: A seqlock (one writer, many readers)", k: "Homework" }
   ];
 
   /* ── tiny DOM helpers ─────────────────────────────────────────────────── */
