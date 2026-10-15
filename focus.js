@@ -753,40 +753,44 @@ window.FOCUS = {
     },
     {
       "n": 8,
-      "focus": "Midterm: revise sessions 1–6",
-      "tagline": "Wed Oct 28 is the 2h20 in-class midterm and nothing else — no lecture, no lab, no new skills. It covers sessions 1–6 (decks w1–w8); Concurrency I (session 7) is not on it.",
+      "focus": "Midterm: everything on the exam",
+      "tagline": "Wed Oct 28 is the 2h20 in-class midterm and nothing else — no lecture, no lab, no new skills. It covers sessions 1–6 (decks w1–w8) plus Threading part I from session 7 (threads, data races, happens-before). Atomics, memory order and locks are on the final.",
       "concepts": [
         {
-          "title": "Pointers, references & memory layout (session 2)",
-          "text": "Be able to read and write pointer arithmetic (p + 1 moves one element), say when a pointer and when a const& is the right parameter, explain one-past-the-end and why an array decays and forgets its length, and argue for a contiguous or SoA layout in cache-line terms — including false sharing on a 64-byte line. Revise the session 2 checklist, lab week02.md and HW 2."
+          "title": "Session 1 — Market microstructure & the limit order book",
+          "text": "The vocabulary every code snippet is written in. Two sorted sides, and the touch (best bid, best ask). Mid, spread, microprice and order-book imbalance as one-line arithmetic. Price priority first, then time (FIFO at a price). A trade prints at the RESTING order's price. Maker/taker: who pays the fee and who earns the rebate. Tick-to-trade, and why the grade is p99.9 rather than the mean."
         },
         {
-          "title": "Allocation, RAII & smart pointers (session 3)",
-          "text": "Be able to pair every allocation with its release, write a class whose constructor establishes an invariant and whose destructor releases what it owns, apply the rule of zero or write the rule of five by hand, say what std::move actually does, choose unique_ptr by default and shared_ptr only for real shared ownership, and predict sizeof and padding from member order. Revise session 3, lab week03.md and HW 3."
+          "title": "Session 2 — Pointers, references & memory layout",
+          "text": "A pointer is an address; pointer or reference depends on whether “absent” is legal. p + 1 moves one ELEMENT, not one byte, and p[i] is *(p + i). One past the end may be formed but not dereferenced, and an array decays to a pointer and forgets its length. Layout is a latency decision: array-of-structs versus struct-of-arrays, the 64-byte cache line and false sharing. Revise the session 2 checklist, lab week02.md and HW 2."
         },
         {
-          "title": "Pools, placement new & virtual dispatch (session 4)",
-          "text": "Be able to explain why the general allocator is non-deterministic, implement a fixed-size pool whose free slots hold the free list, construct with placement new and destroy explicitly, describe an arena / std::pmr resource, and price a virtual call: the vptr, two dependent loads, an indirect branch and the inlining you lose. Revise session 4, lab week04.md and HW 4."
+          "title": "Session 3 — Classes, RAII & smart pointers",
+          "text": "A class is data plus the functions that keep it valid. Destructors run by themselves, in reverse order of construction. RAII: acquire in the constructor, release in the destructor. Rule of zero by default, rule of five when you own a resource; what std::move really does. unique_ptr by default, shared_ptr only for real shared ownership, weak_ptr to break cycles. sizeof, padding and member order. Revise session 3, lab week03.md and HW 3."
         },
         {
-          "title": "Templates, CRTP & compile-time work (session 5)",
-          "text": "Be able to write function and class templates, expand a parameter pack with a fold, branch at compile time with type traits, if constexpr or a concept, move work into constexpr and check it with static_assert, and replace a virtual interface with CRTP or a policy class so the call inlines. Revise session 5, lab week05.md (Parts A and B) and HW 5 / HW 6."
+          "title": "Session 4 — Allocators, pools & virtual dispatch",
+          "text": "What new and malloc cost, and why the hot path cannot afford a non-deterministic allocator. The fixed-size object pool, with free slots forming the free list. Placement new and explicit destruction. Arena / bump allocation and std::pmr. Pooled polymorphic objects: placement new a Derived, destroy through Base*, so the destructor must be virtual. What a virtual call costs: the vptr, two dependent loads, an indirect branch and lost inlining. Revise session 4, lab week04.md and HW 4."
         },
         {
-          "title": "Containers for the order book (session 6)",
-          "text": "Be able to say which container answers each order-book question — Q1 order by id, Q2 level by price, Q3 best prices — and at what cost: vector and its reallocation, list and stable iterators, map/set as a red-black tree of nodes, unordered_map chaining versus open addressing with tombstones, priority_queue and lazy deletion, and the flat price-indexed vector<Level> with a cached best and an intrusive FIFO per level. Revise session 6, lab week07.md and HW 7."
+          "title": "Session 5 — Templates, compile-time work & CRTP",
+          "text": "A template is a recipe the compiler instantiates, not code. Parameter packs and fold expressions. Type traits and if constexpr: branch before the program runs. constexpr and static_assert: make the compiler do the work. CRTP and policy-based design replace a virtual interface so the call inlines, at the price of a type set fixed at compile time. Revise session 5, lab week05.md (Parts A and B) and HW 5 / HW 6."
         },
         {
-          "title": "Complexity, amortized cost & online statistics (session 6)",
-          "text": "Be able to argue cost in cache misses rather than instructions, explain why a linear scan of a small array beats a tree, distinguish amortized from bounded (reserve() removes the reallocation spike), implement a ring buffer, and fold a tick into a running mean, Welford variance and EMA in O(1). Revise the week08.md take-home lab and HW 8 (the rolling counter, due Sat Oct 31)."
+          "title": "Session 6 — Data structures for the order book, and complexity",
+          "text": "Which container answers each order-book question — Q1 order by id, Q2 level by price, Q3 best prices — and at what cost: vector and its reallocation; list and forward_list with stable iterators but scattered nodes; map/set as a red-black tree; unordered_map chaining versus open addressing with tombstones; priority_queue and lazy deletion; the flat price-indexed vector<Level> with a cached best. Then complexity counted in cache misses, amortized versus bounded cost (reserve() removes the spike), the ring buffer, and O(1) mean, Welford variance and EMA. Revise lab week07.md, the week08.md take-home and HW 7 / HW 8."
+        },
+        {
+          "title": "Session 7, Part I — Threading: threads, data races & happens-before",
+          "text": "Only the first part of Concurrency I is on the midterm (deck w9, slides 4–7). Threads share one address space. A data race — two threads touching the same location, at least one writing, with no happens-before between them — is undefined behaviour, not just a stale read. Happens-before is the only rule: it is created by a mutex, a join, or an atomic, and nothing else (not volatile, not luck). Be able to spot the race in a snippet and say how to remove it. Atomics, memory_order, acquire/release and the cost of locks are NOT on the midterm; they are on the final."
         }
       ],
       "hft": {
         "text": "Why this matters in HFT",
         "paragraphs": [
-          "There is no lecture tonight: the whole session is the midterm, 2h20 in class. It covers sessions 1–6 (decks w1–w8) — pointers and layout, ownership and RAII, allocators and virtual dispatch, templates and CRTP, and the data-structures and complexity session. Concurrency I (atomics and memory models, session 7) is not on the midterm; it is on the final.",
-          "Revise the way the exam asks: from the code and the cost, not from definitions. For each session, go back to its checklist on this site and make sure every “You can…” is true without notes, redo the in-class lab from a clean checkout, and answer the interview questions on each session page before opening the model answers. If you can predict what a snippet prints and say what it costs in cache misses, you are ready.",
-          "The same discipline the course grades in your bot is what the questions test: no allocation on the hot path, contiguous data, the right container for each question, compile-time work instead of run-time work, and the tail rather than the mean. Every topic on the midterm reappears in the project and in the final, so revision tonight is not wasted after the exam.",
+          "There is no lecture tonight: the whole session is the midterm, 2h20 in class. It covers sessions 1–6 (decks w1–w8) — microstructure, pointers and layout, ownership and RAII, allocators and virtual dispatch, templates and CRTP, data structures and complexity — plus Threading part I from session 7: threads, data races and happens-before. Atomics, memory orders and the cost of locks (the rest of session 7) are on the final, not tonight.",
+          "Revise the way the exam asks: from the code and the cost, not from definitions. For each session, go back to its checklist on this site and make sure every “You can…” is true without notes, redo the in-class lab from a clean checkout, and answer the interview questions on each session page before opening the model answers. If you can predict what a snippet prints, spot the undefined behaviour and say what it costs in cache misses, you are ready.",
+          "The same discipline the course grades in your bot is what the questions test: no allocation on the hot path, contiguous data, the right container for each question, compile-time work instead of run-time work, no data race between the thread that reads the socket and the thread that runs the strategy, and the tail rather than the mean. Every topic on the midterm reappears in the project and in the final, so revision tonight is not wasted after the exam.",
           "Deadlines around the exam: Project Phase 2 (the local order book) is due tonight, Wed Oct 28, 11:59 PM ET; HW 8 (rolling event counter) and HW 9 (the seqlock from session 7) are due Sat Oct 31, 11:59 PM ET. The course resumes with Concurrency II — lock-free pipelines — on Wed Nov 4."
         ]
       },
@@ -826,6 +830,12 @@ window.FOCUS = {
           "a": "Only when the worst case is moved off the path or removed. vector::push_back is the standard example: the average push is a store, but the one that reallocates copies everything, and it lands on whichever tick happens to cross the capacity. reserve() up front makes the worst case never happen during trading, and a rehashing hash table gets the same treatment by sizing it at startup. If neither is possible, the amortized structure belongs on a background thread, because p99.9 is decided by the worst operation, not the average.",
           "level": "senior",
           "skill": "perf.amortized-reserve"
+        },
+        {
+          "q": "Define a data race, and say what the standard promises when one occurs.",
+          "a": "A data race is two threads accessing the same memory location at the same time, at least one of them writing, with no happens-before relationship between the accesses and no atomic operation protecting them. The standard promises nothing: it is undefined behaviour, so the program is not merely likely to read a stale value — the compiler is allowed to assume it cannot happen and may cache the variable in a register, reorder the accesses or delete a loop. The fix is not luck or volatile; it is to create a happens-before edge with a mutex, a join, or an atomic.",
+          "level": "warm-up",
+          "skill": "cpp.data-races"
         }
       ]
     },

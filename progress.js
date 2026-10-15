@@ -21,7 +21,7 @@
     { n: 5, d: "2026-10-07", s: "Templates", t: "Templates & generic programming + compile-time, policy-based design & CRTP" },
     { n: 6, d: "2026-10-14", s: "Order book", t: "Data structures for the order book, from vector to the flat book (+ complexity & time-series)" },
     { n: 7, d: "2026-10-21", s: "Atomics", t: "Concurrency I (atomics & memory models)" },
-    { n: 8, d: "2026-10-28", s: "Midterm", t: "Midterm (in class, 2h20, no lecture; covers sessions 1–6)", tag: "Midterm" },
+    { n: 8, d: "2026-10-28", s: "Midterm", t: "Midterm (in class, no lecture; covers sessions 1–6 + threading part I)", tag: "Midterm" },
     { n: 9, d: "2026-11-04", s: "Lock-free", t: "Lock-free pipelines" },
     { n: 10, d: "2026-11-11", s: "Network & I/O", t: "Network protocols & market data + async I/O & serialization" },
     { n: 11, d: "2026-11-18", s: "SIMD & colo", t: "SIMD, kernel bypass & colocation" },
@@ -179,7 +179,7 @@
     { d: "2026-10-17", t: "HW 5: Generic programming with the STL", k: "Homework" },
     { d: "2026-10-17", t: "HW 6: CRTP & compile-time computation", k: "Homework" },
     { d: "2026-10-24", t: "HW 7: Fast order book + symbol map", k: "Homework" },
-    { d: "2026-10-28", t: "Midterm (in class, no lecture; covers sessions 1–6)", k: "Exam", cls: true },
+    { d: "2026-10-28", t: "Midterm (in class, no lecture; covers sessions 1–6 + threading part I)", k: "Exam", cls: true },
     { d: "2026-10-28", t: "Project Phase 2: The Local Order Book", k: "Project" },
     { d: "2026-10-31", t: "HW 8: Rolling event counter (sliding window)", k: "Homework" },
     { d: "2026-10-31", t: "HW 9: A seqlock (one writer, many readers)", k: "Homework" }
